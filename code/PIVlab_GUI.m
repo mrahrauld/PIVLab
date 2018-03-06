@@ -6639,11 +6639,15 @@ function pushbutton90_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton90 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    uiopen('cameraParams')
     filepaths =retr('filepath');
+    cameraParams = retr('cameraParams');
     for i=1:length(filepaths)
         I = imread(filepaths{i});
         [J,newOrigin] = undistortImage(I,cameraParams,'OutputView','full');
         imwrite(J, filepaths{i})
     end
         
+function pushbutton91_Callback(hObject, eventdata, handles)
+    uiopen('cameraParams');
+    put('cameraParams',cameraParams);
+    

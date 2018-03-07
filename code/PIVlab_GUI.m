@@ -6494,6 +6494,8 @@ else
     path=uipickvids ('FilterSpec', pathname, 'numfiles', [1 1], 'output', 'struct', 'prompt', 'Select images. Images from one set should have identical dimensions to avoid problems.');
 end
 
+h = waitbar(0,'Loading, please wait')
+
 if isequal(path,0) ==0
     
     if get(handles.zoomon,'Value')==1
@@ -6513,9 +6515,11 @@ if isequal(path,0) ==0
     end
     
     obj = VideoReader(path(1).name);
+    steps = ceil(obj.FrameRate*obj.Duration);
     k = 0;
     while hasFrame(obj) && k < imglimit 
         k = k+1;
+        waitbar(k/steps);
         img = readFrame(obj);
         imgpath{k,1} = sprintf('VidToImg/%06d.jpg', k); % save the paths
         imwrite(img, sprintf('VidToImg/%06d.jpg', k)); % write the image in code directory
@@ -6593,6 +6597,7 @@ if isequal(path,0) ==0
     else
         errordlg('Please select a longer video','Error','on')
     end
+    close(h);
 end
 
 

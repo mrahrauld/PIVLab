@@ -6644,7 +6644,7 @@ function pushbutton90_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton90 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-    filepaths = retr('filepath');
+    filepaths =retr('filepath');
     cameraParams = retr('cameraParams');
     for i=1:length(filepaths)
         I = imread(filepaths{i});
@@ -6652,14 +6652,7 @@ function pushbutton90_Callback(hObject, eventdata, handles)
         imwrite(J, filepaths{i})
     end
         
-
-
-% --- Executes on button press in pushbutton91.
 function pushbutton91_Callback(hObject, eventdata, handles)
     uiopen('cameraParams');
-    cameraParams
     put('cameraParams',cameraParams);
     
-% hObject    handle to pushbutton91 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)

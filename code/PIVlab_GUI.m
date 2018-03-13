@@ -6515,13 +6515,13 @@ if isequal(path,0) ==0
         imglimit = Inf;
     end
     
-    obj = vision.VideoFileReader(path(1).name);
+    obj = VideoReader(path(1).name);
     steps = ceil(obj.FrameRate*obj.Duration);
     k = 0;
     while hasFrame(obj) && k < imglimit 
         k = k+1;
         waitbar(k/steps);
-        img = step(obj);
+        img = readFrame(obj);
         imgpath{k,1} = sprintf('VidToImg/%06d.jpg', k); % save the paths
         imwrite(img, sprintf('VidToImg/%06d.jpg', k)); % write the image in code directory
     end

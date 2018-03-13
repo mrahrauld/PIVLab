@@ -544,8 +544,8 @@ end
                     pick = dir_pick.name;
                     pick_full = fullfile(current_dir,pick);
                     %dir_pick.name = pick_full;
-                    
-                    imshow (imread(pick_full))%,'parent',ah1);
+                    obj = VideoReader(pick_full);
+                    imshow(readFrame(obj));%,'parent',ah1);
                     catch 
                     end
                 end

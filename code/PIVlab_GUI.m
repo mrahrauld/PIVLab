@@ -6651,3 +6651,42 @@ function pushbutton91_Callback(hObject, eventdata, handles)
     uiopen('cameraParams');
     put('cameraParams',cameraParams);
     
+
+
+% --- Executes on button press in pushbutton92.
+function pushbutton92_Callback(hObject, eventdata, handles)
+    filepaths =retr('filepath');
+    fixedFrame = imread(filepaths{1});
+    imshow(fixedFrame);
+    
+    objectRegion=round(getPosition(imrect));
+    fixedPoints = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+    for i = 1:3
+        objectRegion = round(getPosition(imrect));
+        fixedPoints = [fixedPoints; detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion)];
+    end
+    put('fixedPoints',fixedPoints);
+
+
+% --- Executes on button press in pushbutton93.
+function pushbutton93_Callback(hObject, eventdata, handles)
+    filepaths =retr('filepath');
+    fixedPoints = retr('fixedPoints');
+    fixedFrame = imread(filepaths{1});
+    fixed_ref = imref2d(size(fixedFrame));
+    h = waitbar(0,'loading, please wait');
+    pointImage = insertMarker(fixedFrame,fixedPoints.Location,'+','Color','white');
+    tracker = vision.PointTracker('MaxBidirectionalError',1);
+    initialize(tracker,fixedPoints.Location,fixedFrame);
+    steps = length(filepaths);
+    for i=1:length(filepaths)
+        waitbar(i/steps);
+        frame = imread(filepaths{i});
+        [movingPoints, validity] = step(tracker,frame);
+        t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
+        moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
+        imshow(moving_registered);
+        imwrite(moving_registered, filepaths{i})
+    end
+    close(h)
+    

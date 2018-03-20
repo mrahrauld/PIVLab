@@ -6691,7 +6691,6 @@ function pushbutton92_Callback(hObject, eventdata, handles)
 function pushbutton93_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
     fixedPoints = retr('fixedPoints');
-    crop_rect = retr('crop_rect')
     fixedFrame = imread(filepaths{1});
     fixed_ref = imref2d(size(fixedFrame));
     h = waitbar(0,'loading, please wait');
@@ -6699,14 +6698,14 @@ function pushbutton93_Callback(hObject, eventdata, handles)
     tracker = vision.PointTracker('MaxBidirectionalError',1);
     initialize(tracker,fixedPoints.Location,fixedFrame);
     steps = length(filepaths);
-    for i=1:length(filepaths)+1
+    for i=2:length(filepaths)
         waitbar(i/steps);
         frame = imread(filepaths{i});
         [movingPoints, validity] = step(tracker,frame);
         t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
         moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
         imshow(moving_registered);
-        imwrite(imcrop(moving_registered,crop_rect), filepaths{i})
+        imwrite(moving_registered, filepaths{i})
     end
     close(h)
     
@@ -6717,9 +6716,14 @@ function pushbutton94_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
     fixedFrame = imread(filepaths{1});
     imshow(fixedFrame);
-    [J,crop_rect] = imcrop(fixedFrame);
-    imshow(J);
-    put('crop_rect',crop_rect);
+    [J,rect] = imcrop(fixedFrame);
+    h = waitbar(0,'loading, please wait');
+
+    for i=1:length(filepaths)
+        waitbar(i/steps);
+        frame = imread(filepaths{i});
+        
+    end
     
 % hObject    handle to pushbutton94 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB

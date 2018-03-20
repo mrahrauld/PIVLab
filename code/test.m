@@ -1,5 +1,5 @@
 
-videoFileReader = vision.VideoFileReader('../../DJI_0005.MOV');
+videoFileReader = vision.VideoFileReader('../../DJI_0087.MOV');
 videoPlayer = vision.VideoPlayer('Position',[100,100,680,520]);
 fixedFrame = step(videoFileReader);
 fixed_ref = imref2d(size(fixedFrame));

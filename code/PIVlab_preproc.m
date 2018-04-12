@@ -1,4 +1,4 @@
-function out = PIVlab_preproc (in,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize)
+function out = PIVlab_preproc (in,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize)
 if size(in,3)>1
     in(:,:,2:end)=[];
 end
@@ -42,6 +42,21 @@ if highp == 1
     h = fspecial('gaussian',highpsize,highpsize);
     in_roi=double(in_roi-(imfilter(in_roi,h,'replicate')));
     in_roi=in_roi/max(max(in_roi))*255;
+end
+
+if lmt == 1
+    h = fspecial('average',lmtsize);
+    mean = imfilter(in_roi,h,'replicate');
+    if mod(lmtsize,2) == 1
+        nhood = ones(lmtsize,lmtsize);
+    else
+        nhood = ones(lmtsize-1,lmtsize-1);
+    end
+    std2(in_roi);
+    std = stdfilt(in_roi,nhood);
+    in_roi = double(in_roi-mean);
+    in_roi = in_roi/max(max(in_roi))*255;
+    in_roi = uint8(in_roi);
 end
 
 if wienerwurst == 1

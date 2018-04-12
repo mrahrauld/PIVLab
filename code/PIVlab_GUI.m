@@ -1603,12 +1603,14 @@ if size(filepath,1) >1
     highpsize=str2double(get(handles.highp_size, 'string'));
     wienerwurst=get(handles.wienerwurst, 'value');
     wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));
+    lmt=get(handles.lmt, 'value');
+    lmtsize=str2double(get(handles.lmtsize, 'string')); 
     %clipthresh=str2double(get(handles.clip_thresh, 'string'));
     roirect=retr('roirect');
     if size (roirect,2)<4
         roirect=[1,1,size(img,2)-1,size(img,1)-1];
     end
-    out = PIVlab_preproc (img,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize);
+    out = PIVlab_preproc(img,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
     image(out, 'parent',gca, 'cdatamapping', 'scaled');
     colormap('gray');
     axis image;
@@ -1775,11 +1777,13 @@ if ok==1
             clahesize=str2double(get(handles.clahe_size, 'string'));
             highpsize=str2double(get(handles.highp_size, 'string'));
             wienerwurst=get(handles.wienerwurst, 'value');
-            wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));            
+            wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));
+            lmt=get(handles.lmt, 'value');
+            lmtsize=str2double(get(handles.lmtsize, 'string')); 
             %clipthresh=str2double(get(handles.clip_thresh, 'string'));
             roirect=retr('roirect');
-            image1 = PIVlab_preproc (image1,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize);
-            image2 = PIVlab_preproc (image2,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize);
+            image1 = PIVlab_preproc (image1,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
+            image2 = PIVlab_preproc (image2,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
             maskiererx=retr('maskiererx');
             maskierery=retr('maskierery');
             ximask={};
@@ -1910,9 +1914,11 @@ if ok==1
         wienerwurst=get(handles.wienerwurst, 'value');
         wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));
         %clipthresh=str2double(get(handles.clip_thresh, 'string'));
+        lmt=get(handles.lmt, 'value');
+        lmtsize=str2double(get(handles.lmtsize, 'string')); 
         roirect=retr('roirect');
-        image1 = PIVlab_preproc (image1,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize);
-        image2 = PIVlab_preproc (image2,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize);
+        image1 = PIVlab_preproc (image1,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
+        image2 = PIVlab_preproc (image2,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
         maskiererx=retr('maskiererx');
         maskierery=retr('maskierery');
         ximask={};
@@ -6699,7 +6705,7 @@ function pushbutton93_Callback(hObject, eventdata, handles)
     tracker = vision.PointTracker('MaxBidirectionalError',1);
     initialize(tracker,fixedPoints.Location,fixedFrame);
     steps = length(filepaths);
-    for i=1:length(filepaths)+1
+    for i=1:length(filepaths)
         waitbar(i/steps);
         frame = imread(filepaths{i});
         [movingPoints, validity] = step(tracker,frame);
@@ -6721,6 +6727,3 @@ function pushbutton94_Callback(hObject, eventdata, handles)
     imshow(J);
     put('crop_rect',crop_rect);
     
-% hObject    handle to pushbutton94 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)

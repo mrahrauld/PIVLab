@@ -21,7 +21,7 @@ gen_image2_roi = image2_roi;
 if numel(mask_inpt)>0
     cellmask=mask_inpt;
     mask=zeros(size(image1_roi));
-    for i=1:size(cellmask,1);
+    for i=1:size(cellmask,1)
         masklayerx=cellmask{i,1};
         masklayery=cellmask{i,2};
         mask = mask + poly2mask(masklayerx-xroi,masklayery-yroi,size(image1_roi,1),size(image1_roi,2)); %kleineres eingangsbild und maske geshiftet
@@ -166,15 +166,15 @@ for multipass=1:passes-1
     b=1;
     %eps=0.1;
     for c=1:2
-        if c==1;
+        if c==1
             velcomp=utable;
         else
             velcomp=vtable;
         end
 
         clear neigh
-        for ii = -b:b;
-            for jj = -b:b;
+        for ii = -b:b
+            for jj = -b:b
                 neigh(:, :, ii+2*b, jj+2*b)=velcomp((1+b:end-b)+ii, (1+b:end-b)+jj);
             end
         end
@@ -377,14 +377,18 @@ for multipass=1:passes-1
     %new xtable and ytable
     xtable = repmat((minix:step:maxix)+interrogationarea/2, length(miniy:step:maxiy), 1);
     ytable = repmat(((miniy:step:maxiy)+interrogationarea/2)', 1, length(minix:step:maxix));
-
+    %%%%% TESTS %%%%
+%     size(xtable)
+%     size(ytable)
+%     size(result_conv)
+%     find(result_conv==255)
     if subpixfinder==1
         [vector] = SUBPIXGAUSS (result_conv,interrogationarea, x1, y1, z1,SubPixOffset);
     elseif subpixfinder==2
         [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea, x1, y1, z1,SubPixOffset);
     end
     vector = permute(reshape(vector, [size(xtable') 2]), [2 1 3]);
-
+    
     utable = utable+vector(:,:,1);
     vtable = vtable+vector(:,:,2);
 

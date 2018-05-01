@@ -1,7 +1,6 @@
-function [xtable ytable utable vtable typevector result_conv_passes] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform)
+function [xtable ytable utable vtable typevector result_conv] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform,result_conv_passes)
 %profile on
 %this funtion performs the  PIV analysis.
-result_conv_passes = cell(0);
 warning off %#ok<*WNOFF> %MATLAB:log:logOfZero
 if numel(roi_inpt)>0
     xroi=roi_inpt(1);
@@ -91,20 +90,18 @@ ss1 = repmat(s1, [1, 1, size(s0,3)])+repmat(s0, [interrogationarea, interrogatio
 image1_cut = image1_roi(ss1);
 image2_cut = image2_roi(ss1);
 
-%do fft2
-result_conv = fftshift(fftshift(real(ifft2(conj(fft2(image1_cut)).*fft2(image2_cut))), 1), 2);
+% %do fft2
+% result_conv = fftshift(fftshift(real(ifft2(conj(fft2(image1_cut)).*fft2(image2_cut))), 1), 2);
 % minres = permute(repmat(squeeze(min(min(result_conv))), [1, size(result_conv, 1), size(result_conv, 2)]), [2 3 1]);
 % deltares = permute(repmat(squeeze(max(max(result_conv))-min(min(result_conv))),[ 1, size(result_conv, 1), size(result_conv, 2)]), [2 3 1]);
-result_conv_passes{1} = result_conv;
-minres = min(min(result_conv));
-deltares = max(max(result_conv)) - minres;
-result_conv = ((result_conv-minres)./deltares)*255;
+% result_conv = ((result_conv-minres)./deltares)*255;
+% %apply mask
+% ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :)));
+% jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
+% typevector(jj) = 0;
+% result_conv(:,:, ii) = 0;
+result_conv = result_conv_passes{1};
 
-%apply mask
-ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :)));
-jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
-typevector(jj) = 0;
-result_conv(:,:, ii) = 0;
 [y, x, z] = ind2sub(size(result_conv), find(result_conv==255));
 
  % we need only one peak from each couple pictures
@@ -122,10 +119,14 @@ if subpixfinder==1
 elseif subpixfinder==2
     [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea, x1, y1, z1, SubPixOffset);
 end
+size(vector)
+[size(xtable') 2]
 vector = permute(reshape(vector, [size(xtable') 2]), [2 1 3]);
 
 utable = vector(:,:,1);
 vtable = vector(:,:,2);
+
+
 %assignin('base','corr_results',corr_results);
 
 
@@ -353,21 +354,18 @@ for multipass=1:passes-1
     image1_cut = image1_roi(ss1);
     image2_cut = image2_crop_i1(ss2);
 
-    %do fft2
-    result_conv = fftshift(fftshift(real(ifft2(conj(fft2(image1_cut)).*fft2(image2_cut))), 1), 2);
+%     %do fft2
+%     result_conv = fftshift(fftshift(real(ifft2(conj(fft2(image1_cut)).*fft2(image2_cut))), 1), 2);
 %     minres = permute(repmat(squeeze(min(min(result_conv))), [1, size(result_conv, 1), size(result_conv, 2)]), [2 3 1]);
 %     deltares = permute(repmat(squeeze(max(max(result_conv))-min(min(result_conv))), [1, size(result_conv, 1), size(result_conv, 2)]), [2 3 1]);
-    result_conv_passes{multipass+1} = result_conv;
-    minres = min(min(result_conv));
-    deltares = max(max(result_conv)) - minres;
-    result_conv = ((result_conv-minres)./deltares)*255;
-
-    %apply mask
-    ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :)));
-    jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
-    typevector(jj) = 0;
-    result_conv(:,:, ii) = 0;
-
+%     result_conv = ((result_conv-minres)./deltares)*255;
+% 
+%     %apply mask
+%     ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :)));
+%     jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
+%     typevector(jj) = 0;
+%     result_conv(:,:, ii) = 0;
+    result_conv = result_conv_passes{multipass+1};
     [y, x, z] = ind2sub(size(result_conv), find(result_conv==255));
     [z1, zi] = sort(z);
     % we need only one peak from each couple pictures
@@ -388,6 +386,7 @@ for multipass=1:passes-1
     
     utable = utable+vector(:,:,1);
     vtable = vtable+vector(:,:,2);
+
 end
 
 %assignin('base','pass_result',pass_result);

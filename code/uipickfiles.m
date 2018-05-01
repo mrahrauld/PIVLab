@@ -324,6 +324,11 @@ filter_ed = uicontrol('Position',[10 445+30 80 20],...
 	'HorizontalAlignment','left',...
 	'Callback',@setfilspec,...
      'Visible', 'off');
+grayscaling =  uicontrol('Position',[10 500+50 160 16],...
+	'Style','checkbox',...
+	'String','Grayscale (overwrite the original)',...
+	'HorizontalAlignment','left',...
+    'Visible', 'on');
 uicontrol('Position',[10 500+30 160 16],...
 	'Style','text',...
 	'String','Reg. Exp. Filter',...
@@ -832,11 +837,11 @@ end
 				return
 			end
         end
-        imgspacing = get(img_spacing,'String')
+        imgspacing = get(img_spacing,'String');
         if isempty(imgspacing) % If default value
             imgspacing = '1';
         end
-        imgspacing = str2num(imgspacing)
+        imgspacing = str2num(imgspacing);
         if isempty(imgspacing) % If not an integer
 				msg = {'Image spacing must be an integer.','Please change its value'};
 				uiwait(errordlg(msg,'','modal'))
@@ -845,6 +850,8 @@ end
             hgui=getappdata(0,'hgui');
             setappdata(hgui, 'imgspacing', imgspacing);
         end
+        v = get(grayscaling,'Value');
+        setappdata(hgui, 'grayscalingval', v);
 		delete(fig)
 	end
 

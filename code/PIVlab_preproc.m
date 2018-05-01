@@ -52,9 +52,9 @@ if lmt == 1
     else
         nhood = ones(lmtsize-1,lmtsize-1);
     end
-    std2(in_roi);
+    glob_std=std2(in_roi);
     std = stdfilt(in_roi,nhood);
-    in_roi = double(in_roi-mean);
+    in_roi = double(in_roi-mean-glob_std);
     in_roi = in_roi/max(max(in_roi))*255;
     in_roi = uint8(in_roi);
 end

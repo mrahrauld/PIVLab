@@ -86,7 +86,7 @@ try
     
     
     ctr=0;
-    pivFiles = {'PIVlab_GUI.fig' 'dctn.m' 'idctn.m' 'inpaint_nans.m' 'piv_DCC.m' 'piv_FFTmulti.m' 'PIVlab_preproc.m' 'PIVlablogo.jpg' 'smoothn.m' 'uipickfiles.m' 'uipickvids.m' 'PIVlab_settings_default.mat' 'hsbmap.mat' 'parula.mat' 'ellipse.m' 'nanmax.m' 'nanmin.m' 'nanstd.m' 'nanmean.m' 'exportfig.m' 'fastLICFunction.m' 'icons.mat' 'mmstream2.m' 'PIVlab_citing.fig' 'PIVlab_citing.m'};
+    pivFiles = {'PIVlab_GUI.fig' 'dctn.m' 'idctn.m' 'inpaint_nans.m' 'piv_DCC.m' 'piv_FFTmulti.m' 'piv_FFTmulti_mean' 'PIVlab_preproc.m' 'PIVlablogo.jpg' 'smoothn.m' 'uipickfiles.m' 'uipickvids.m' 'PIVlab_settings_default.mat' 'hsbmap.mat' 'parula.mat' 'ellipse.m' 'nanmax.m' 'nanmin.m' 'nanstd.m' 'nanmean.m' 'exportfig.m' 'fastLICFunction.m' 'icons.mat' 'mmstream2.m' 'PIVlab_citing.fig' 'PIVlab_citing.m'};
     for i=1:size(pivFiles,2)
         if exist(pivFiles{1,i})~=2
             disp(['ERROR: A required file was not found: ' pivFiles{1,i}]);
@@ -811,6 +811,13 @@ if isequal(path,0) ==0
     put('yzoomlimit',[]);
     
     imgspacing = retr('imgspacing');
+    grayscaling = retr('grayscalingval');
+    if grayscaling
+        for j = 1:size(path,1)
+            I = imread(path(j).name);
+            imwrite(uint8(mean(I,3)),path(j).name);
+        end
+    end
     sequencer = retr('sequencer');
     if sequencer==1
         for j = 1:2*imgspacing:size(path,1)
@@ -1720,6 +1727,7 @@ if ok==1
     handles=gethand;
     filepath=retr('filepath');
     filename=retr('filename');
+    result_conv_passes_mean = cell(0);
     resultslist=cell(0); %clear old results
     toolsavailable(0);
     set (handles.cancelbutt, 'enable', 'on');
@@ -1826,8 +1834,7 @@ if ok==1
                 int4=str2num(get(handles.edit52,'string'));
                 contents = get(handles.popupmenu16,'string');
                 imdeform=contents{get(handles.popupmenu16,'Value')};
-
-                [x y u v typevector] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+                [x y u v typevector result_conv_passes] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
                 %u=real(u)
                 %v=real(v)
             end
@@ -1837,7 +1844,16 @@ if ok==1
             resultslist{4,(i+1)/2}=v;
             resultslist{5,(i+1)/2}=typevector;
             resultslist{6,(i+1)/2}=[];
+            if isempty(result_conv_passes_mean)
+                result_conv_passes_mean = result_conv_passes;
+            else
+                for j=1:length(result_conv_passes_mean)
+                    result_conv_passes_mean{j} = result_conv_passes_mean{j} + result_conv_passes{j};
+                end
+            end
             put('resultslist',resultslist);
+            put('result_conv_passes_mean',result_conv_passes_mean);
+            assignin('base','result_conv_passes_mean',result_conv_passes_mean);
             set(handles.fileselector, 'value', (i+1)/2);
             set(handles.progress, 'string' , ['Frame progress: 100%'])
             set(handles.overall, 'string' , ['Total progress: ' int2str((i+1)/2/(size(filepath,1)/2)*100) '%'])
@@ -1882,6 +1898,7 @@ handles=gethand;
 ok=checksettings;
 if ok==1
     resultslist=retr('resultslist');
+    result_conv_list = retr('result_conv_list');
     set(handles.progress, 'string' , ['Frame progress: 0%']);drawnow;
     handles=gethand;
     filepath=retr('filepath');
@@ -1961,7 +1978,7 @@ if ok==1
             int4=str2num(get(handles.edit52,'string'));
             contents = get(handles.popupmenu16,'string');
             imdeform=contents{get(handles.popupmenu16,'Value')};
-            [x y u v typevector] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+            [x y u v typevector result_conv] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
             %u=real(u)
             %v=real(v)
         end
@@ -1977,8 +1994,11 @@ if ok==1
         resultslist{9, (selected+1)/2} = [];
         resultslist{10, (selected+1)/2} = [];
         resultslist{11, (selected+1)/2} = [];
+        
+        result_conv_list{1, (selected+1)/2} = result_conv;
         put('derived', [])
         put('resultslist',resultslist);
+        put('result_conv_list',result_conv_list);
         set(handles.progress, 'string' , ['Frame progress: 100%'])
         set(handles.overall, 'string' , ['Total progress: 100%'])
         time1frame=toc;
@@ -5696,6 +5716,323 @@ if isempty(resultslist)==0
     end
 end
 
+function wheightmeanmaker_Callback(hObject, eventdata, handles)
+handles=gethand;
+filepath=retr('filepath');
+resultslist=retr('resultslist');
+
+if isempty(resultslist)==0
+    if size(filepath,1)>0
+        sizeerror=0;
+        typevectormittel=ones(size(resultslist{1,1}));
+        ismean=retr('ismean');
+        if isempty(ismean)==1
+            ismean=zeros(size(resultslist,2),1);
+        end
+        
+        %man könnte erstmal alle frames stapeln, und danach nur die verwenden deren
+        %nummer gewählt war.
+        %for count=1:size(resultslist,2)
+        %eval('A(1,[1,6,3])')
+        %in textbox eintragen 1,6,3
+        %oder 1:5
+        %oder 1:end
+        %oder 1:3,8:10
+        str = strrep(get(handles.selectedFramesMean,'string'),'-',':');
+        endinside=findstr(str, 'end');
+        if isempty(endinside)==0
+            str = strrep(get(handles.selectedFramesMean,'string'),'end',num2str(max(find(ismean==0))));
+        end
+        selectionok=1;
+        
+        strnum=str2num(str);
+        if isempty(strnum)==1 || isempty(findstr(str,'.'))==0 || isempty(findstr(str,';'))==0
+            msgbox(['Error in frame selection syntax. Please use the following syntax (examples):' sprintf('\n') '1:3' sprintf('\n') '1,3,7,9' sprintf('\n') '1:3,7,8,9,11:13' ],'Error','error','modal')
+            selectionok=0;
+        end
+        if selectionok==1
+            mincount=(min(strnum));
+            for count=mincount:size(resultslist,2)
+                if size(resultslist,2)>=count && numel(resultslist{1,count})>0
+                    x=resultslist{1,count};
+                    y=resultslist{2,count};
+                    if size(resultslist,1)>6 %filtered exists
+                        if size(resultslist,1)>10 && numel(resultslist{10,count}) > 0 %smoothed exists
+                            u=resultslist{10,count};
+                            v=resultslist{11,count};
+                            typevector=resultslist{9,count};
+                            if numel(typevector)==0 %happens if user smoothes sth without NaN and without validation
+                                typevector=resultslist{5,count};
+                            end
+                        else
+                            u=resultslist{7,count};
+                            if size(u,1)>1
+                                v=resultslist{8,count};
+                                typevector=resultslist{9,count};
+                            else %filter was applied for other frames but not for this one
+                                u=resultslist{3,count};
+                                v=resultslist{4,count};
+                                typevector=resultslist{5,count};
+                            end
+                        end
+                    else
+                        u=resultslist{3,count};
+                        v=resultslist{4,count};
+                        typevector=resultslist{5,count};
+                    end
+                    
+                    %if count==mincount %besser: wenn orgsize nicht existiert
+                    if exist('originalsizex')==0
+                        originalsizex=size(u,2);
+                        originalsizey=size(u,1);
+                    else
+                        
+                        if size(u,2)~=originalsizex || size(u,1)~=originalsizey
+                            sizeerror=1;
+                        end
+                    end
+                    if ismean(count,1)==0 && sizeerror==0
+                        umittel(:,:,count)=u;
+                        vmittel(:,:,count)=v;
+                    end
+                    if sizeerror==0
+                        typevectormittel(:,:,count)=typevector;
+                    end
+                end
+                
+            end
+            if sizeerror==0
+                for i=1:size(strnum,2)
+                    if size(resultslist,2)>=strnum(i) %dann ok
+                        x_tmp=resultslist{1,strnum(i)};
+                        if isempty(x_tmp)==1 %dann nicht ok
+                            msgbox('Your selected range includes non-analyzed frames.','Error','error','modal')
+                            selectionok=0;
+                            break
+                        end
+                    else
+                        msgbox('Your selected range includes non-analyzed frames.','Error','error','modal')
+                        selectionok=0;
+                        break
+                    end
+                    if size(ismean,1)>=strnum(i)
+                        if ismean(strnum(i))==1
+                            msgbox('You must not include frames in your selection that already consist of mean vectors.','Error','error','modal')
+                            selectionok=0;
+                            break
+                        end
+                    else
+                        msgbox('Your selected range exceeds the amount of analyzed frames.','Error','error','modal')
+                        selectionok=0;
+                        break
+                    end
+                end
+                
+                if selectionok==1
+                    maskiererx=retr('maskiererx');
+                    maskierery=retr('maskierery');
+                    if isempty(maskiererx)==1
+                        maskiererx=cell(1,1);
+                        maskierery=cell(1,1);
+                    end
+                    maskiererx_temp=cell(1,1);
+                    maskierery_temp=cell(1,1);
+                    maskiererx_temp=maskiererx(:,1:2:end);
+                    maskierery_temp=maskierery(:,1:2:end);
+                    %kopieren in temp "originalmaske", dann alles löschen was nicht
+                    %ausgewählt. (auf [] setzen)
+                    % z.B.: maskiererxselected=maskiererx_temp(1,[1:6])
+                    try
+                        eval(['maskiererxselected=maskiererx_temp(:,[' str ']);']);
+                        eval(['maskiereryselected=maskierery_temp(:,[' str ']);']);
+                    catch
+                        maskiererxselected=cell(1,1);
+                        maskiereryselected=cell(1,1);
+                    end
+                    newmaskx=cell(0,0);
+                    for i=1:size(maskiererxselected,1)
+                        for j=1:size(maskiererxselected,2)
+                            if numel(maskiererxselected{i,j})~=0
+                                newmaskx{size(newmaskx,1)+1,1}=maskiererxselected{i,j};
+                            end
+                        end
+                    end
+                    for i=size(newmaskx,1):-1:2
+                        if numel(newmaskx{i,1})==numel(newmaskx{i-1,1})
+                            A=newmaskx{i-1,1};
+                            B=newmaskx{i,1};
+                            if mean(A-B)==0
+                                newmaskx{i,1}={};
+                            end
+                        end
+                    end
+                    
+                    try
+                        newmaskx(cellfun(@isempty,newmaskx))=[];
+                    catch
+                        disp('Problems with old Matlab version... Please update Matlab or unexpected things might happen...')
+                    end
+                    newmasky=cell(0,0);
+                    for i=1:size(maskiereryselected,1)
+                        for j=1:size(maskiereryselected,2)
+                            if numel(maskiereryselected{i,j})~=0
+                                newmasky{size(newmasky,1)+1,1}=maskiereryselected{i,j};
+                            end
+                        end
+                    end
+                    for i=size(newmasky,1):-1:2
+                        if numel(newmasky{i,1})==numel(newmasky{i-1,1})
+                            A=newmasky{i-1,1};
+                            B=newmasky{i,1};
+                            if mean(A-B)==0
+                                newmasky{i,1}={};
+                            end
+                        end
+                    end
+                    try
+                        newmasky(cellfun(@isempty,newmasky))=[];
+                    catch
+                        disp('Problems with old Matlab version... Please update Matlab or unexpected things might happen...')
+                    end
+                    for i=1:size(newmaskx,1)
+                        %ans Ende der originalmaske wird eine zusammengesetzte maske
+                        %aus allen gewählten frames gehängt.
+                        maskiererx{i,size(filepath,1)+1}=newmaskx{i,1};
+                        maskiererx{i,size(filepath,1)+2}=newmaskx{i,1};
+                        maskierery{i,size(filepath,1)+1}=newmasky{i,1};
+                        maskierery{i,size(filepath,1)+2}=newmasky{i,1};
+                    end
+                    put('maskiererx',maskiererx);
+                    put('maskierery',maskierery);
+                    typevectoralle=ones(size(typevector));
+                    
+                    
+                    
+                    %Hier erst neue matrix erstellen mit ausgewählten frames
+                    %typevectoralle ist ausgabe für gui
+                    %typevectormean ist der mittelwert aller types
+                    %typevectormittel ist der stapel aus allen typevectors
+                    
+                    eval(['typevectormittelselected=typevectormittel(:,:,[' str ']);']);
+                    
+                    typevectormean=mean(typevectormittelselected,3);
+                    %for i=1:size(typevectormittelselected,3)
+                    for i=1:size(typevectormittelselected,1)
+                        for j=1:size(typevectormittelselected,2)
+                            if mean(typevectormittelselected(i,j,:))==0
+                                typevectoralle(i,j)=0;
+                            end
+                        end
+                    end
+                    %da wo ALLE null sidn auf null setzen.
+                    %typevectoralle(typevectormittelselected(:,:,i)==0)=0; %maskierte vektoren sollen im Mean maskiert sein
+                    % end
+                    
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    
+                    
+                    %%%%% DEFINING VARIABLES
+                    image1=imread(filepath{1});
+                    image2=imread(filepath{2});
+                    interrogationarea=str2double(get(handles.intarea, 'string'));
+                    step=str2double(get(handles.step, 'string'));
+                    subpixfinder=get(handles.subpix,'value');
+                    maskiererx=retr('maskiererx');
+                    maskierery=retr('maskierery');
+                    ximask={};
+                    yimask={};
+                    if size(maskiererx,2)>=i
+                        for j=1:size(maskiererx,1);
+                            if isempty(maskiererx{j,i})==0
+                                ximask{j,1}=maskiererx{j,i}; %#ok<*AGROW>
+                                yimask{j,1}=maskierery{j,i};
+                            else
+                                break
+                            end
+                        end
+                        if size(ximask,1)>0
+                            mask=[ximask yimask];
+                        else
+                            mask=[];
+                        end
+                    else
+                        mask=[];
+                    end
+                    passes=1;
+                    if get(handles.checkbox26,'value')==1
+                        passes=2;
+                    end
+                    if get(handles.checkbox27,'value')==1
+                        passes=3;
+                    end
+                    if get(handles.checkbox28,'value')==1
+                        passes=4;
+                    end
+                    int2=str2num(get(handles.edit50,'string'));
+                    int3=str2num(get(handles.edit51,'string'));
+                    int4=str2num(get(handles.edit52,'string'));
+                    contents = get(handles.popupmenu16,'string');
+                    imdeform=contents{get(handles.popupmenu16,'Value')};
+                    roirect=retr('roirect');
+                    result_conv_passes_mean=retr('result_conv_passes_mean');
+                    for i= 1:length(result_conv_passes_mean)
+                        result_conv = result_conv_passes_mean{i};
+                        minres = min(min(result_conv));
+                        deltares = max(max(result_conv)) - minres;
+                        result_conv = ((result_conv-minres)./deltares)*255;
+                        result_conv_passes_mean{i} = result_conv;
+                    end
+                    %new x y u v typevector result_conv
+            
+                    [x y u v typevector] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform,result_conv_passes_mean);
+
+                    
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    
+                    
+                    typevectoralle(typevectormean>1.5)=2; %if more than 50% of vectors are interpolated, then mark vector in mean as interpolated too.
+                    resultslist{5,size(filepath,1)/2+1}=typevectoralle;
+                    resultslist{1,size(filepath,1)/2+1}=x;
+                    resultslist{2,size(filepath,1)/2+1}=y;
+                    
+                    %hier neue matrix mit ausgewählten frames!
+                    eval(['umittelselected=umittel(:,:,[' str ']);']);
+                    eval(['vmittelselected=vmittel(:,:,[' str ']);']);
+                    
+%                     resultslist{3,size(filepath,1)/2+1}=nanmean(umittelselected,3);
+%                     resultslist{4,size(filepath,1)/2+1}=nanmean(vmittelselected,3);
+                    resultslist{3,size(filepath,1)/2+1}=u;
+                    resultslist{4,size(filepath,1)/2+1}=v;
+                    filepathselected=filepath(1:2:end);
+                    eval(['filepathselected=filepathselected([' str '],:);']);
+                    filepath{size(filepath,1)+1,1}=filepathselected{1,1};
+                    filepath{size(filepath,1)+1,1}=filepathselected{1,1};
+                    filename=retr('filename');
+                    
+                    filename{size(filename,1)+1,1}=['MEAN of frames ' str];
+                    filename{size(filename,1)+1,1}=['MEAN of frames ' str];
+                    
+                    ismean(size(resultslist,2),1)=1;
+                    put('ismean',ismean);
+                    
+                    put ('resultslist', resultslist);
+                    put ('filepath', filepath);
+                    put ('filename', filename);
+                    put ('typevector', typevector);
+                    sliderrange
+                    try
+                        set (handles.fileselector,'value',get (handles.fileselector,'max'));
+                    catch
+                    end
+                    
+                    sliderdisp
+                end
+            else %user tried to average analyses with different sizes
+                errordlg('All analyses of one session have to be of the same size and have to be analyzed with identical PIV settings.','Averaging not possible...')
+            end
+        end
+    end
+end
 function part_am_Callback(hObject, eventdata, handles)
 check_comma(hObject)
 function part_size_Callback(hObject, eventdata, handles)
@@ -6513,8 +6850,8 @@ end
 
 if isequal(path,0) ==0
     
-    h = waitbar(0,'Loading, please wait');
-    
+    toolsavailable(0);
+    set (handles.cancel_vid_import, 'enable', 'on');
     if get(handles.zoomon,'Value')==1
         set(handles.zoomon,'Value',0);
         zoomon_Callback(handles.zoomon)
@@ -6530,21 +6867,30 @@ if isequal(path,0) ==0
     if imglimit <= 1
         imglimit = Inf;
     end
-    
+    grayscaling = retr('grayscalingval');
     obj = VideoReader(path(1).name);
     [fpath,name,ext] = fileparts(path(1).name);
     dir = strcat(fpath,'/')
     mkdir(dir,name)
     steps = ceil(obj.FrameRate*obj.Duration);
     k = 0;
-    while hasFrame(obj) && k < imglimit 
+    cancel = 1;
+    put('cancel_import',1)
+    handles=gethand;
+    while cancel && hasFrame(obj) && k < imglimit 
         k = k+1;
-        waitbar(k/steps);
+        set(handles.load_video_butt, 'string' , [int2str((k/steps)*100) '%'])
+        drawnow;
         img = readFrame(obj);
+        if grayscaling
+            img = uint8(mean(img,3));
+        end
+        imshow(img)
         imgpath{k,1} = strcat(fpath,'/',name,sprintf('/%06d.jpg', k)); % save the paths
         imwrite(img, strcat(fpath,'/',name,sprintf('/%06d.jpg', k))); % write the image in code directory
+        cancel = retr('cancel_import');
     end
-    
+    set(handles.load_video_butt, 'string' , ['Load video'])
     sequencer=retr('sequencer');
     if sequencer==1
         for i=1:size(imgpath,1)
@@ -6607,7 +6953,7 @@ if isequal(path,0) ==0
         put('xzoomlimit', []);
         put('yzoomlimit', []);
         
-        
+        toolsavailable(1);
         %clear_cali_Callback do not clear calibration anymore.....
         %Problems...?
         sliderdisp %displays raw image when slider moves
@@ -6617,7 +6963,6 @@ if isequal(path,0) ==0
     else
         errordlg('Please select a longer video','Error','on')
     end
-    close(h);
 end
 
 
@@ -6678,23 +7023,48 @@ function pushbutton91_Callback(hObject, eventdata, handles)
     
 
 
-% --- Executes on button press in pushbutton92.
-function pushbutton92_Callback(hObject, eventdata, handles)
+% --- Executes on button press in select_GRP_rect.
+function select_GRP_rect_Callback(hObject, eventdata, handles)
+    fixedPoints = retr('fixedPoints');
+    filepaths =retr('filepath');
+    fixedFrame = imread(filepaths{1});
+    objectRegion=round(getPosition(imrect));
+%     new_points = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+%     new_points = detectFASTFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+    new_points = detectHarrisFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+    if isempty(fixedPoints)
+        fixedPoints = new_points.selectStrongest(20);
+    else
+        fixedPoints = [fixedPoints; new_points.selectStrongest(20)];
+    end
+    example = insertMarker(fixedFrame,fixedPoints,'+');
+    imshow(example);
+    put('fixedPoints',fixedPoints);
+%     filepaths =retr('filepath');
+%     fixedFrame = imread(filepaths{1});
+%     imshow(fixedFrame);
+%     
+%     objectRegion=round(getPosition(imrect));
+%     fixedPoints = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+%     for i = 1:3
+%         objectRegion = round(getPosition(imrect));
+%         fixedPoints = [fixedPoints; detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion)];
+%     end
+%     example = insertMarker(fixedFrame,fixedPoints,'+');
+%     imshow(example);
+%     put('fixedPoints',fixedPoints);
+
+% --- Executes on button press in clear_GRP_rect.
+function clear_GRP_rect_Callback(hObject, eventdata, handles)
+    put ('fixedPoints',{});
     filepaths =retr('filepath');
     fixedFrame = imread(filepaths{1});
     imshow(fixedFrame);
     
-    objectRegion=round(getPosition(imrect));
-    fixedPoints = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
-    for i = 1:3
-        objectRegion = round(getPosition(imrect));
-        fixedPoints = [fixedPoints; detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion)];
-    end
-    put('fixedPoints',fixedPoints);
 
 
-% --- Executes on button press in pushbutton93.
-function pushbutton93_Callback(hObject, eventdata, handles)
+% --- Executes on button press in stabilize.
+function stabilize_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
     fixedPoints = retr('fixedPoints');
     crop_rect = retr('crop_rect')
@@ -6727,3 +7097,13 @@ function pushbutton94_Callback(hObject, eventdata, handles)
     imshow(J);
     put('crop_rect',crop_rect);
     
+
+
+% --- Executes on button press in cancel_vid_import.
+function cancel_vid_import_Callback(hObject, eventdata, handles)
+% hObject    handle to cancel_vid_import (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    put('cancel_import',0);
+    drawnow;
+    toolsavailable(1);

@@ -1,4 +1,4 @@
-function [xtable ytable utable vtable typevector result_conv_passes] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform)
+function [xtable ytable utable vtable typevector result_conv_passes s2ntable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform)
 %profile on
 %this funtion performs the  PIV analysis.
 result_conv_passes = cell(0);
@@ -99,7 +99,6 @@ result_conv_passes{1} = result_conv;
 minres = min(min(result_conv));
 deltares = max(max(result_conv)) - minres;
 result_conv = ((result_conv-minres)./deltares)*255;
-
 %apply mask
 ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :)));
 jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
@@ -123,11 +122,9 @@ elseif subpixfinder==2
     [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea, x1, y1, z1, SubPixOffset);
 end
 vector = permute(reshape(vector, [size(xtable') 2]), [2 1 3]);
-
 utable = vector(:,:,1);
 vtable = vector(:,:,2);
 %assignin('base','corr_results',corr_results);
-
 
 %multipass
 %feststellen wie viele passes
@@ -393,12 +390,13 @@ end
 %assignin('base','pass_result',pass_result);
 %__________________________________________________________________________
 
-
 xtable=xtable-ceil(interrogationarea/2);
 ytable=ytable-ceil(interrogationarea/2);
 
 xtable=xtable+xroi;
 ytable=ytable+yroi;
+s2ntable = mean(mean(result_conv))./max(max(result_conv));
+s2ntable = permute(reshape(s2ntable, size(xtable')), [2 1 3]);
 
 function [vector] = SUBPIXGAUSS(result_conv, interrogationarea, x, y, z, SubPixOffset)
     xi = find(~((x <= (size(result_conv,2)-1)) & (y <= (size(result_conv,1)-1)) & (x >= 2) & (y >= 2)));

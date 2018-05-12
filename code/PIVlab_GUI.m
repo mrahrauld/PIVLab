@@ -86,7 +86,7 @@ try
     
     
     ctr=0;
-    pivFiles = {'PIVlab_GUI.fig' 'dctn.m' 'idctn.m' 'inpaint_nans.m' 'piv_DCC.m' 'piv_FFTmulti.m' 'piv_FFTmulti_mean' 'PIVlab_preproc.m' 'PIVlablogo.jpg' 'smoothn.m' 'uipickfiles.m' 'uipickvids.m' 'PIVlab_settings_default.mat' 'hsbmap.mat' 'parula.mat' 'ellipse.m' 'nanmax.m' 'nanmin.m' 'nanstd.m' 'nanmean.m' 'exportfig.m' 'fastLICFunction.m' 'icons.mat' 'mmstream2.m' 'PIVlab_citing.fig' 'PIVlab_citing.m'};
+    pivFiles = {'PIVlab_GUI.fig' 'dctn.m' 'idctn.m' 'inpaint_nans.m' 'piv_DCC.m' 'piv_FFTmulti.m' 'piv_FFTmulti_mean' 'PIVlab_preproc.m' 'PIVlablogo.jpg' 'smoothn.m' 'uipickfiles.m' 'uipickvids.m' 'PIVlab_settings_default.mat' 'hsbmap.mat' 'parula.mat' 'ellipse.m' 'nanmax.m' 'nanmin.m' 'nanstd.m' 'nanmean.m' 'exportfig.m' 'fastLICFunction.m' 'icons.mat' 'mmstream2.m' 'PIVlab_citing.fig' 'PIVlab_citing.m' 'quiverc.m'};
     for i=1:size(pivFiles,2)
         if exist(pivFiles{1,i})~=2
             disp(['ERROR: A required file was not found: ' pivFiles{1,i}]);
@@ -511,31 +511,46 @@ if size(filepath,1)>0
             vecscale=str2num(get(handles.vectorscale,'string')); %#ok<*ST2NM>
         end
         hold on;
-        
-        vectorcolorintp=[str2double(get(handles.interpr,'string')) str2double(get(handles.interpg,'string')) str2double(get(handles.interpb,'string'))];
-        if vecskip==1
-            q=quiver(x(typevector==1),y(typevector==1),...
-                (u(typevector==1)-(retr('subtr_u')/retr('caluv')))*vecscale,...
-                (v(typevector==1)-(retr('subtr_v')/retr('caluv')))*vecscale,...
-                'Color', vectorcolor,'autoscale', 'off','linewidth',str2double(get(handles.vecwidth,'string')));
-            q2=quiver(x(typevector==2),y(typevector==2),...
-                (u(typevector==2)-(retr('subtr_u')/retr('caluv')))*vecscale,...
-                (v(typevector==2)-(retr('subtr_v')/retr('caluv')))*vecscale,...
-                'Color', vectorcolorintp,'autoscale', 'off','linewidth',str2double(get(handles.vecwidth,'string')));
-            scatter(x(typevector==0),y(typevector==0),'rx') %masked
+        typevector_reduced=typevector(1:vecskip:end,1:vecskip:end);
+        x_reduced=x(1:vecskip:end,1:vecskip:end);
+        y_reduced=y(1:vecskip:end,1:vecskip:end);
+        u_reduced=u(1:vecskip:end,1:vecskip:end);
+        v_reduced=v(1:vecskip:end,1:vecskip:end);
+        subtr_u =  retr('subtr_u');
+        subtr_v =  retr('subtr_v');
+        caluv = retr('caluv');   
+        if get(handles.quiverc_enable,'value')==1
+            avail_maps=get(handles.quiverc_colormap,'string');
+            selected_index=get(handles.quiverc_colormap,'value');
+            if selected_index == 4 %HochschuleBremen map
+                load hsbmap.mat;
+                CC = colormap(hsb);
+            elseif selected_index== 1 %rainbow
+                load rainbow.mat;
+                CC = colormap (rainbow);
+            else
+                CC = colormap(avail_maps{selected_index});
+            end
+            posichoice  = get(handles.quiverc_color_bar_pos,'String');
+            index = get(handles.quiverc_color_bar_pos,'Value');
+            color_bar_pos = posichoice{index};
+            color_bar_enable = get(handles.quiverc_color_bar_enable,'value');
+            q=quiverc(x_reduced,y_reduced,...
+                (u_reduced-(subtr_u/caluv))*vecscale,...
+                (v_reduced-(subtr_v/caluv))*vecscale,CC,str2double(get(handles.vecwidth,'string')),...
+                color_bar_enable,...
+                color_bar_pos,...
+                vecscale);
+            q2 = [];
         else
-            typevector_reduced=typevector(1:vecskip:end,1:vecskip:end);
-            x_reduced=x(1:vecskip:end,1:vecskip:end);
-            y_reduced=y(1:vecskip:end,1:vecskip:end);
-            u_reduced=u(1:vecskip:end,1:vecskip:end);
-            v_reduced=v(1:vecskip:end,1:vecskip:end);
+            vectorcolorintp=[str2double(get(handles.interpr,'string')) str2double(get(handles.interpg,'string')) str2double(get(handles.interpb,'string'))];
             q=quiver(x_reduced(typevector_reduced==1),y_reduced(typevector_reduced==1),...
-                (u_reduced(typevector_reduced==1)-(retr('subtr_u')/retr('caluv')))*vecscale,...
-                (v_reduced(typevector_reduced==1)-(retr('subtr_v')/retr('caluv')))*vecscale,...
+                (u_reduced(typevector_reduced==1)-(subtr_u/caluv))*vecscale,...
+                (v_reduced(typevector_reduced==1)-(subtr_v/caluv))*vecscale,...
                 'Color', vectorcolor,'autoscale', 'off','linewidth',str2double(get(handles.vecwidth,'string')));
             q2=quiver(x_reduced(typevector_reduced==2),y_reduced(typevector_reduced==2),...
-                (u_reduced(typevector_reduced==2)-(retr('subtr_u')/retr('caluv')))*vecscale,...
-                (v_reduced(typevector_reduced==2)-(retr('subtr_v')/retr('caluv')))*vecscale,...
+                (u_reduced(typevector_reduced==2)-(subtr_u/caluv))*vecscale,...
+                (v_reduced(typevector_reduced==2)-(subtr_v/caluv))*vecscale,...
                 'Color', vectorcolorintp,'autoscale', 'off','linewidth',str2double(get(handles.vecwidth,'string')));
             scatter(x_reduced(typevector_reduced==0),y_reduced(typevector_reduced==0),'rx') %masked
         end
@@ -1728,7 +1743,9 @@ if ok==1
     filepath=retr('filepath');
     filename=retr('filename');
     result_conv_passes_mean = cell(0);
+    result_conv_passes_list = cell(0);
     resultslist=cell(0); %clear old results
+    SNRtable_list = cell(0);
     toolsavailable(0);
     set (handles.cancelbutt, 'enable', 'on');
     ismean=retr('ismean');
@@ -1763,7 +1780,47 @@ if ok==1
     setappdata(0,'cormap4',[]);
     %}
 
+    clahe=get(handles.clahe_enable,'value');
+    highp=get(handles.enable_highpass,'value');
+    %clip=get(handles.enable_clip,'value');
+    intenscap=get(handles.enable_intenscap, 'value');
+    clahesize=str2double(get(handles.clahe_size, 'string'));
+    highpsize=str2double(get(handles.highp_size, 'string'));
+    wienerwurst=get(handles.wienerwurst, 'value');
+    wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));
+    lmt=get(handles.lmt, 'value');
+    lmtsize=str2double(get(handles.lmtsize, 'string')); 
+    %clipthresh=str2double(get(handles.clip_thresh, 'string'));
+    roirect=retr('roirect');
     
+    maskiererx=retr('maskiererx');
+    maskierery=retr('maskierery');
+     
+    interrogationarea=str2double(get(handles.intarea, 'string'));
+    step=str2double(get(handles.step, 'string'));
+    subpixfinder=get(handles.subpix,'value');
+    
+    is_dcc = get(handles.dcc,'Value');
+    is_fftmulti = get(handles.fftmulti,'Value');
+    if is_fftmulti==1
+        passes=1;
+        
+        if get(handles.checkbox26,'value')==1
+            passes=2;
+        end
+        if get(handles.checkbox27,'value')==1
+            passes=3;
+        end
+        if get(handles.checkbox28,'value')==1
+            passes=4;
+        end
+        int2=str2num(get(handles.edit50,'string'));
+        int3=str2num(get(handles.edit51,'string'));
+        int4=str2num(get(handles.edit52,'string'));
+        contents = get(handles.popupmenu16,'string');
+        imdeform=contents{get(handles.popupmenu16,'Value')};
+    end
+                
     for i=1:2:size(filepath,1)
         if i==1
             tic
@@ -1778,22 +1835,9 @@ if ok==1
                 disp('Warning: To optimize speed, your images should be grayscale, 8 bit!')
             end
             set(handles.progress, 'string' , ['Frame progress: 0%']);drawnow; %#ok<*NBRAK>
-            clahe=get(handles.clahe_enable,'value');
-            highp=get(handles.enable_highpass,'value');
-            %clip=get(handles.enable_clip,'value');
-            intenscap=get(handles.enable_intenscap, 'value');
-            clahesize=str2double(get(handles.clahe_size, 'string'));
-            highpsize=str2double(get(handles.highp_size, 'string'));
-            wienerwurst=get(handles.wienerwurst, 'value');
-            wienerwurstsize=str2double(get(handles.wienerwurstsize, 'string'));
-            lmt=get(handles.lmt, 'value');
-            lmtsize=str2double(get(handles.lmtsize, 'string')); 
-            %clipthresh=str2double(get(handles.clip_thresh, 'string'));
-            roirect=retr('roirect');
             image1 = PIVlab_preproc (image1,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
             image2 = PIVlab_preproc (image2,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize);
-            maskiererx=retr('maskiererx');
-            maskierery=retr('maskierery');
+     
             ximask={};
             yimask={};
             if size(maskiererx,2)>=i
@@ -1813,28 +1857,11 @@ if ok==1
             else
                 mask=[];
             end
-            interrogationarea=str2double(get(handles.intarea, 'string'));
-            step=str2double(get(handles.step, 'string'));
-            subpixfinder=get(handles.subpix,'value');
-            if get(handles.dcc,'Value')==1
+        
+            if is_dcc ==1
                 [x y u v typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
-            elseif get(handles.fftmulti,'Value')==1
-                passes=1;
-                if get(handles.checkbox26,'value')==1
-                    passes=2;
-                end
-                if get(handles.checkbox27,'value')==1
-                    passes=3;
-                end
-                if get(handles.checkbox28,'value')==1
-                    passes=4;
-                end
-                int2=str2num(get(handles.edit50,'string'));
-                int3=str2num(get(handles.edit51,'string'));
-                int4=str2num(get(handles.edit52,'string'));
-                contents = get(handles.popupmenu16,'string');
-                imdeform=contents{get(handles.popupmenu16,'Value')};
-                [x y u v typevector result_conv_passes] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+            else
+                [x y u v typevector result_conv_passes SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
                 %u=real(u)
                 %v=real(v)
             end
@@ -1844,6 +1871,19 @@ if ok==1
             resultslist{4,(i+1)/2}=v;
             resultslist{5,(i+1)/2}=typevector;
             resultslist{6,(i+1)/2}=[];
+            SNRtable_list{1,(i+1)/2} = SNRtable;
+            if  get(handles.Save_correlations,'value') ==1
+                for j = 1:passes
+                    if i == 1
+                        n = floor(size(filepath,1)/2)
+                        size(zeros([n size(result_conv_passes{j})]))
+                        result_conv_passes_list{j} = zeros([n size(result_conv_passes{j})]);
+                    end 
+                    size(result_conv_passes_list{j}((i+1)/2,:,:,:))
+                    size(result_conv_passes{j})
+                    result_conv_passes_list{j}((i+1)/2,:,:,:) = result_conv_passes{j};
+                end
+            end
             if isempty(result_conv_passes_mean)
                 result_conv_passes_mean = result_conv_passes;
             else
@@ -1851,9 +1891,10 @@ if ok==1
                     result_conv_passes_mean{j} = result_conv_passes_mean{j} + result_conv_passes{j};
                 end
             end
+            put('SNRtable_list',SNRtable_list);
             put('resultslist',resultslist);
             put('result_conv_passes_mean',result_conv_passes_mean);
-            assignin('base','result_conv_passes_mean',result_conv_passes_mean);
+            put('result_conv_passes_list',result_conv_passes_list);
             set(handles.fileselector, 'value', (i+1)/2);
             set(handles.progress, 'string' , ['Frame progress: 100%'])
             set(handles.overall, 'string' , ['Total progress: ' int2str((i+1)/2/(size(filepath,1)/2)*100) '%'])
@@ -1898,6 +1939,7 @@ handles=gethand;
 ok=checksettings;
 if ok==1
     resultslist=retr('resultslist');
+    SNRtable_list = retr('SNRtable_list');
     result_conv_list = retr('result_conv_list');
     set(handles.progress, 'string' , ['Frame progress: 0%']);drawnow;
     handles=gethand;
@@ -1978,7 +2020,7 @@ if ok==1
             int4=str2num(get(handles.edit52,'string'));
             contents = get(handles.popupmenu16,'string');
             imdeform=contents{get(handles.popupmenu16,'Value')};
-            [x y u v typevector result_conv] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+            [x y u v typevector result_conv SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
             %u=real(u)
             %v=real(v)
         end
@@ -1994,9 +2036,11 @@ if ok==1
         resultslist{9, (selected+1)/2} = [];
         resultslist{10, (selected+1)/2} = [];
         resultslist{11, (selected+1)/2} = [];
+        SNRtable_list{1,(selected+1)/2} = SNRtable;
         
         result_conv_list{1, (selected+1)/2} = result_conv;
         put('derived', [])
+        put('SNRtable_list',SNRtable_list);
         put('resultslist',resultslist);
         put('result_conv_list',result_conv_list);
         set(handles.progress, 'string' , ['Frame progress: 100%'])
@@ -2440,7 +2484,7 @@ if size(resultslist,2)>=frame
             v(v<minvalv)=NaN;
             v(v>maxvalv)=NaN;
         end
-        %local median check
+        %% local median check
         %Westerweel & Scarano (2005): Universal Outlier detection for PIV data
         if get(handles.loc_median, 'value')==1
             epsilon=str2double(get(handles.epsilon,'string'));
@@ -2468,6 +2512,14 @@ if size(resultslist,2)>=frame
             info1=(sqrt(normfluct(:,:,1).^2+normfluct(:,:,2).^2)>thresh);
             u(info1==1)=NaN;
             v(info1==1)=NaN;
+        end
+        %% signal to noise check
+        if get(handles.SNR_filter, 'value')==1
+            thresh=str2double(get(handles.SNR_tresh,'string'));
+            SNRtable_list = retr('SNRtable_list');
+            SNRtable = SNRtable_list{1,frame}
+            u(SNRtable>thresh)=NaN;
+            v(SNRtable>thresh)=NaN;
         end
         %0=mask
         %1=normal
@@ -4295,6 +4347,7 @@ else
     put('sessionpath',PathName );
     put('derived',[]);
     put('resultslist',[]);
+    put('result_conv_passes_mean',[]);
     put('maskiererx',[]);
     put('maskierery',[]);
     put('roirect',[]);
@@ -4303,7 +4356,7 @@ else
     put('filepath',[]);
     hgui=getappdata(0,'hgui');
     warning off all
-    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize');
+    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_mean','result_conv_passes_list');
     names=fieldnames(vars);
     for i=1:size(names,1)
         setappdata(hgui,names{i},vars.(names{i}))
@@ -5974,14 +6027,22 @@ if isempty(resultslist)==0
                     contents = get(handles.popupmenu16,'string');
                     imdeform=contents{get(handles.popupmenu16,'Value')};
                     roirect=retr('roirect');
-                    result_conv_passes_mean=retr('result_conv_passes_mean');
-                    for i= 1:length(result_conv_passes_mean)
-                        result_conv = result_conv_passes_mean{i};
+                    result_conv_passes_list = retr('result_conv_passes_list')
+                    result_conv_passes_mean = cell(0)
+                    for i = 1:passes
+                        result_conv = squeeze(mean(result_conv_passes_list{i},1));
                         minres = min(min(result_conv));
                         deltares = max(max(result_conv)) - minres;
                         result_conv = ((result_conv-minres)./deltares)*255;
                         result_conv_passes_mean{i} = result_conv;
                     end
+%                     for i= 1:length(result_conv_passes_mean)
+%                         result_conv = result_conv_passes_mean{i};
+%                         minres = min(min(result_conv));
+%                         deltares = max(max(result_conv)) - minres;
+%                         result_conv = ((result_conv-minres)./deltares)*255;
+%                         result_conv_passes_mean{i} = result_conv;
+%                     end
                     %new x y u v typevector result_conv
             
                     [x y u v typevector] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform,result_conv_passes_mean);
@@ -7107,3 +7168,54 @@ function cancel_vid_import_Callback(hObject, eventdata, handles)
     put('cancel_import',0);
     drawnow;
     toolsavailable(1);
+
+
+% --------------------------------------------------------------------
+function har_trist_Callback(hObject, eventdata, handles)
+% hObject    handle to har_trist (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function quiverc_Callback(hObject, eventdata, handles)
+switchui('multip22')
+
+
+
+% --- Executes during object creation, after setting all properties.
+function quiverc_colormap_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to quiverc_colormap (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in quiverc_color_bar_enable.
+function quiverc_color_bar_enable_Callback(hObject, eventdata, handles)
+% hObject    handle to quiverc_color_bar_enable (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of quiverc_color_bar_enable
+
+
+
+
+
+% --- Executes during object creation, after setting all properties.
+function quiverc_color_bar_pos_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to quiverc_color_bar_pos (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end

@@ -307,18 +307,11 @@ if size(filepath,1)>0
         %1=vectors only
         if displaywhat==1 %vectors only
             currentimage=imread(filepath{selected});
-            if get(handles.quiverc_enable,'value')==1
-                if size(currentimage,3)==1
-                    currentimage = cat(3,currentimage,currentimage,currentimage);
-                end
-                image(currentimage, 'parent',gca, 'cdatamapping', 'scaled');
-                colormap('gray');
-            else
-                image(currentimage, 'parent',gca, 'cdatamapping', 'scaled');
-                colormap('gray');
-                vectorcolor=[str2double(get(handles.validr,'string')) str2double(get(handles.validg,'string')) str2double(get(handles.validb,'string'))];
-                %vectorcolor='g';
-            end
+            image(currentimage, 'parent',gca, 'cdatamapping', 'scaled');
+            colormap('gray');
+            
+            vectorcolor=[str2double(get(handles.validr,'string')) str2double(get(handles.validg,'string')) str2double(get(handles.validb,'string'))];
+            %vectorcolor='g';
             %end
         else %displaywhat>1
             if size(derived,2)>=(currentframe+1)/2 && numel(derived{displaywhat-1,(currentframe+1)/2})>0 %derived parameters requested and existant
@@ -533,8 +526,8 @@ if size(filepath,1)>0
                 load hsbmap.mat;
                 CC = colormap(hsb);
             elseif selected_index== 1 %rainbow
-                load parula.mat;
-                CC = colormap (parula);
+                load rainbow.mat;
+                CC = colormap (rainbow);
             else
                 CC = colormap(avail_maps{selected_index});
             end
@@ -542,13 +535,12 @@ if size(filepath,1)>0
             index = get(handles.quiverc_color_bar_pos,'Value');
             color_bar_pos = posichoice{index};
             color_bar_enable = get(handles.quiverc_color_bar_enable,'value');
-            caluv = retr('caluv');
             q=quiverc(x_reduced,y_reduced,...
                 (u_reduced-(subtr_u/caluv))*vecscale,...
                 (v_reduced-(subtr_v/caluv))*vecscale,CC,str2double(get(handles.vecwidth,'string')),...
                 color_bar_enable,...
                 color_bar_pos,...
-                vecscale,caluv);
+                vecscale);
             q2 = [];
         else
             vectorcolorintp=[str2double(get(handles.interpr,'string')) str2double(get(handles.interpg,'string')) str2double(get(handles.interpb,'string'))];
@@ -2540,7 +2532,7 @@ if size(resultslist,2)>=frame
             v(info1==1)=NaN;
         end
         %% signal to noise check
-        ismean = retr('ismean');
+        ismean = retr('ismean')
         if get(handles.SNR_filter, 'value')==1
             if isempty(ismean) || ismean(frame,1) ~= 1
                 thresh=str2double(get(handles.SNR_tresh,'string'));

@@ -1,4 +1,4 @@
-function [xtable ytable utable vtable typevector result_conv_passes s2ntable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform)
+function [xtable ytable utable vtable typevector result_conv_passes SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask_inpt, roi_inpt,passes,int2,int3,int4,imdeform)
 %profile on
 %this funtion performs the  PIV analysis.
 result_conv_passes = cell(0);
@@ -395,8 +395,16 @@ ytable=ytable-ceil(interrogationarea/2);
 
 xtable=xtable+xroi;
 ytable=ytable+yroi;
-s2ntable = mean(mean(result_conv))./max(max(result_conv));
-s2ntable = permute(reshape(s2ntable, size(xtable')), [2 1 3]);
+SNRtable = max(max(result_conv))./mean(mean(result_conv));
+
+
+
+hgui=getappdata(0,'hgui');
+figure(hgui);
+% size(SNRtable)
+% size(reshape(SNRtable, size(xtable')))
+% size(permute(permute(reshape(SNRtable, size(xtable')), [2 1 3]),[2 1 3]))
+SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
 
 function [vector] = SUBPIXGAUSS(result_conv, interrogationarea, x, y, z, SubPixOffset)
     xi = find(~((x <= (size(result_conv,2)-1)) & (y <= (size(result_conv,1)-1)) & (x >= 2) & (y >= 2)));

@@ -104,6 +104,8 @@ ii = find(mask(ss1(round(interrogationarea/2+1), round(interrogationarea/2+1), :
 jj = find(mask((miniy:step:maxiy)+round(interrogationarea/2), (minix:step:maxix)+round(interrogationarea/2)));
 typevector(jj) = 0;
 result_conv(:,:, ii) = 0;
+
+
 [y, x, z] = ind2sub(size(result_conv), find(result_conv==255));
 
  % we need only one peak from each couple pictures
@@ -395,8 +397,6 @@ ytable=ytable-ceil(interrogationarea/2);
 
 xtable=xtable+xroi;
 ytable=ytable+yroi;
-SNRtable = max(max(result_conv))./mean(mean(result_conv));
-
 
 
 hgui=getappdata(0,'hgui');
@@ -404,8 +404,9 @@ figure(hgui);
 % size(SNRtable)
 % size(reshape(SNRtable, size(xtable')))
 % size(permute(permute(reshape(SNRtable, size(xtable')), [2 1 3]),[2 1 3]))
+SNRtable = max(max(result_conv))./mean(mean(result_conv));
 SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
-
+% SNRtable = reshape(SNRtable, size(xtable));
 function [vector] = SUBPIXGAUSS(result_conv, interrogationarea, x, y, z, SubPixOffset)
     xi = find(~((x <= (size(result_conv,2)-1)) & (y <= (size(result_conv,1)-1)) & (x >= 2) & (y >= 2)));
     x(xi) = [];

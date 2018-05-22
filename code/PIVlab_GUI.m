@@ -1750,7 +1750,7 @@ if ok==1
     handles=gethand;
     filepath=retr('filepath');
     filename=retr('filename');
-    result_conv_passes_mean = cell(0);
+    result_conv_passes_sum = cell(0);
     result_conv_passes_SNRmean = cell(0);
     result_conv_passes_list = cell(0);
     resultslist=cell(0); %clear old results
@@ -1876,7 +1876,8 @@ if ok==1
             end
         
             if is_dcc ==1
-                [x y u v typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+                passes = 1;
+                [x y u v typevector result_conv_passes SNRtable] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
             else
                 [x y u v typevector result_conv_passes SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
                 %u=real(u)
@@ -1891,7 +1892,6 @@ if ok==1
             SNRtable_list{1,(i+1)/2} = SNRtable;
             if  get(handles.Save_correlations,'value') ==1
                 if mod((i-1)/2,frame_spacing_corr) == 0
-                    i
                     for j = 1:passes
 %                         if i == 1
 %                             n = floor(size(filepath,1)/2)
@@ -1905,17 +1905,17 @@ if ok==1
                     end
                 end
             end
-            if isempty(result_conv_passes_mean)
-                result_conv_passes_mean = result_conv_passes;
+            if isempty(result_conv_passes_sum)
+                result_conv_passes_sum = result_conv_passes;
                 result_conv_passes_SNRmean = result_conv_passes;
             else
-                for j=1:length(result_conv_passes_mean)
-                    result_conv_passes_mean{j} = result_conv_passes_mean{j} + result_conv_passes{j};
+                for j=1:length(result_conv_passes_sum)
+                    result_conv_passes_sum{j} = result_conv_passes_sum{j} + result_conv_passes{j};
                 end
             end
             put('SNRtable_list',SNRtable_list);
             put('resultslist',resultslist);
-            put('result_conv_passes_mean',result_conv_passes_mean);
+            put('result_conv_passes_sum',result_conv_passes_sum);
             put('result_conv_passes_list',result_conv_passes_list);
             set(handles.fileselector, 'value', (i+1)/2);
             set(handles.progress, 'string' , ['Frame progress: 100%'])
@@ -1937,7 +1937,7 @@ if ok==1
             secs=floor(secs);
             set(handles.totaltime,'string', ['Time left: ' sprintf('%2.2d', hrs) 'h ' sprintf('%2.2d', mins) 'm ' sprintf('%2.2d', secs) 's']);
         end %cancel==0
-    end
+    end     
     delete(findobj('tag', 'annoyingthing'));
     set(handles.overall, 'string' , ['Total progress: ' int2str(100) '%'])
     set(handles.totaltime, 'String','Time left: N/A');
@@ -2025,7 +2025,9 @@ if ok==1
         step=str2double(get(handles.step, 'string'));
         subpixfinder=get(handles.subpix,'value');
         if get(handles.dcc,'Value')==1
-            [x y u v typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+            tic
+            [x y u v typevector result_conv SNRtable] = piv_DCC(image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+            toc
         elseif get(handles.fftmulti,'Value')==1
             passes=1;
             if get(handles.checkbox26,'value')==1
@@ -2042,7 +2044,9 @@ if ok==1
             int4=str2num(get(handles.edit52,'string'));
             contents = get(handles.popupmenu16,'string');
             imdeform=contents{get(handles.popupmenu16,'Value')};
+            tic
             [x y u v typevector result_conv SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+            toc
 %             h = figure
 %             surf(SNRtable)
 %             hgui=getappdata(0,'hgui');
@@ -2546,7 +2550,7 @@ if size(resultslist,2)>=frame
                 thresh=str2double(get(handles.SNR_tresh,'string'));
                 SNRtable_list = retr('SNRtable_list');
                 SNRtable = SNRtable_list{1,frame};
-                SNRtable = SNRtable ./ max(max(SNRtable));
+                SNRtable = SNRtable ./ max(max(SNRtable));%norm(SNRtable(~isnan(SNRtable)))
                 u(SNRtable<thresh)=NaN;
                 v(SNRtable<thresh)=NaN;
             end
@@ -3950,15 +3954,21 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
     nrofbins=str2double(get(handles.nrofbins, 'string'));
     if choice_plot==1
         [n xout]=hist(u*caluv-retr('subtr_u'),nrofbins);
+        mn = mean(mean(u));
         xdescript='velocity (u)';
     elseif choice_plot==2
         [n xout]=hist(v*caluv-retr('subtr_v'),nrofbins);
+        mn = mean(mean(v));
         xdescript='velocity (v)';
     elseif choice_plot==3
-        [n xout]=hist(sqrt((u*caluv-retr('subtr_u')).^2+(v*caluv-retr('subtr_v')).^2),nrofbins);
+        velo = sqrt((u*caluv-retr('subtr_u')).^2+(v*caluv-retr('subtr_v')).^2);
+        mn = mean(mean(velo));
+        [n xout]=hist(velo,nrofbins);
         xdescript='velocity magnitude';
     end
     h2=bar(xout,n);
+    hax = gca;
+    line([mn mn],get(hax,'YLim'),'color','r','LineWidth',2);
     set (gca, 'xgrid', 'on', 'ygrid', 'on', 'TickDir', 'in')
     if retr('caluv')==1 && retr('calxy')==1
         xlabel([xdescript ' [px/frame]']);
@@ -4377,7 +4387,7 @@ else
     put('sessionpath',PathName );
     put('derived',[]);
     put('resultslist',[]);
-    put('result_conv_passes_mean',[]);
+    put('result_conv_passes_sum',[]);
     put('maskiererx',[]);
     put('maskierery',[]);
     put('roirect',[]);
@@ -4386,7 +4396,7 @@ else
     put('filepath',[]);
     hgui=getappdata(0,'hgui');
     warning off all
-    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_mean','result_conv_passes_list');
+    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_sum','result_conv_passes_list');
     names=fieldnames(vars);
     for i=1:size(names,1)
         setappdata(hgui,names{i},vars.(names{i}))
@@ -6034,7 +6044,7 @@ if isempty(resultslist)==0
                     roirect=retr('roirect');
                     result_conv_passes_list = retr('result_conv_passes_list');
                     if get(handles.Save_correlations,'value') == 1
-                        result_conv_passes_mean = cell(0);
+                        result_conv_passes_sum = cell(0);
                         [x,y,u,v,typevector] = getxyuv(resultslist,1);
                         result_conv_passes_list{passes,1}(:,:,isnan(reshape(permute(u,[2 1 3]),1,1,[]))) = 0;
                         if get(handles.SNR_weights,'value') == 1
@@ -6051,44 +6061,39 @@ if isempty(resultslist)==0
                         for i = 1:passes
 %                             if get(handles.SNR_weights,'value') == 1
 %                                 SNRtable_list = retr('SNRtable_list');
-%                                 result_conv_passes_mean{i} = reshape(permute(SNRtable_list{1,1},[2 1 3]),1,1,[]).*result_conv_passes_list{i,1};
+%                                 result_conv_passes_sum{i} = reshape(permute(SNRtable_list{1,1},[2 1 3]),1,1,[]).*result_conv_passes_list{i,1};
 %                                 for j = 2:size(result_conv_passes_list,2)
 %                                     [x,y,u,v,typevector] = getxyuv(resultslist,j);
-%                                     result_conv_passes_mean{i} = result_conv_passes_mean{i} + reshape(permute(SNRtable_list{1,j},[2 1 3]),1,1,[]) .* result_conv_passes_list{i,j};
+%                                     result_conv_passes_sum{i} = result_conv_passes_sum{i} + reshape(permute(SNRtable_list{1,j},[2 1 3]),1,1,[]) .* result_conv_passes_list{i,j};
 %                                 end
 %                             else
-                                result_conv_passes_mean{i} = result_conv_passes_list{i,1};
+                                result_conv_passes_sum{i} = result_conv_passes_list{i,1};
                                 for j = 2:size(result_conv_passes_list,2)
                                     if isempty(result_conv_passes_list{i,j})==0
-                                        size(result_conv_passes_mean{i})
-                                        size(result_conv_passes_list{i,j})
-                                        result_conv_passes_mean{i} = result_conv_passes_mean{i} + result_conv_passes_list{i,j};
+                                        result_conv_passes_sum{i} = result_conv_passes_sum{i} + result_conv_passes_list{i,j};
                                     end
                                 end
 %                             end
                         end
                     else
-                        result_conv_passes_mean = retr('result_conv_passes_mean');
+                        result_conv_passes_sum = retr('result_conv_passes_sum');
                     end
                     for i = 1:passes
-                        result_conv = result_conv_passes_mean{i};
+                        result_conv = result_conv_passes_sum{i};
                         minres = min(min(result_conv));
                         deltares = max(max(result_conv)) - minres;
                         result_conv = ((result_conv-minres)./deltares)*255;
-                        result_conv_passes_mean{i} = result_conv;
-                        size(result_conv_passes_mean{i})
+                        result_conv_passes_sum{i} = result_conv;
                     end
-%                     for i= 1:length(result_conv_passes_mean)
-%                         result_conv = result_conv_passes_mean{i};
+%                     for i= 1:length(result_conv_passes_sum)
+%                         result_conv = result_conv_passes_sum{i};
 %                         minres = min(min(result_conv));
 %                         deltares = max(max(result_conv)) - minres;
 %                         result_conv = ((result_conv-minres)./deltares)*255;
-%                         result_conv_passes_mean{i} = result_conv;
+%                         result_conv_passes_sum{i} = result_conv;
 %                     end
                     %new x y u v typevector result_conv
-                    step
-                    interrogationarea
-                    [x y u v typevector] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform,result_conv_passes_mean);
+                    [x y u v typevector] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform,result_conv_passes_sum);
 
                     
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7330,3 +7335,214 @@ function [x,y,u,v,typevector] =  getxyuv(resultslist,count)
         v=resultslist{4,count};
         typevector=resultslist{5,count};
     end
+
+
+% --- Executes on button press in TEST.
+function TEST_Callback(hObject, eventdata, handles)
+    SNRtable_list = retr('SNRtable_list')
+    xtable = SNRtable_list{1,1};
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    frame = 1;
+    [m,j] = min(min(SNRtable_list(:,:,frame)));
+    [m,i] = min(min(SNRtable_list(:,:,frame),[],2),[],1);
+    [m,j] = max(max(SNRtable_list(:,:,frame)));
+    [m,i] = max(max(SNRtable_list(:,:,frame),[],2),[],1);
+    SNRtable_list(i,j,2)
+    result_conv_passes_list = retr('result_conv_passes_list');
+    passes = 1;
+    result_conv = result_conv_passes_list{passes,1};
+    result_conv = scale_corr(result_conv);
+    result_conv = list_to_mat(result_conv,xtable);
+    
+    figure;
+    
+    surf(result_conv(:,:,i,j))
+    
+    
+    
+    hgui=getappdata(0,'hgui');
+    figure(hgui); 
+function plot_corr_average_ex()
+    result_conv_passes_list = retr('result_conv_passes_list');
+    result_conv_passes_sum = retr('result_conv_passes_sum');
+    SNRtable_list = retr('SNRtable_list');
+    xtable = SNRtable_list{1,1};
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    [m,j] = min(min(SNRtable_list(:,:,2)));
+    [m,i] = min(min(SNRtable_list(:,:,2),[],2),[],1);
+    i = 4;j=4;
+    passes = get_num_passes();
+    m = 1;n =5;
+    delta = 100;
+    for i = 4
+        figure;
+        k = 1
+        result_conv = result_conv_passes_list{passes,k};
+        result_conv = scale_corr(result_conv);
+        result_conv = list_to_mat(result_conv,xtable);
+        img = fliplr(result_conv(:,:,i,j)'+delta-20)        
+        hold on;
+        imagesc(img);
+        [U1,V1]=draw_arrow(img);
+        surf(img);
+        view(-45,40)
+        title('(a) Correlation matrix 1');
+        axis off;
+        
+        k = 2
+        figure;
+        result_conv = result_conv_passes_list{passes,k};
+        result_conv = scale_corr(result_conv);
+        result_conv = list_to_mat(result_conv,xtable);
+        img = fliplr(result_conv(:,:,i,j)'+delta+50)
+        [U2,V2]= draw_arrow(img);
+        surf(img);
+        imagesc(img);
+        view(-45,40)
+        title('(b) Correlation matrix 2');
+        axis off;
+        
+        k=k+1;
+        figure;
+        [meanSNR,result_conv_mean] = SNR_sum_scale();
+        [meanSNR,result_conv_mean] = scale_sum_scale();
+        
+        SNRtable = compute_SNRtable(result_conv_mean,xtable);
+        
+        result_conv_mean = list_to_mat(result_conv_mean,xtable);
+        img = fliplr(result_conv_mean(:,:,i,j)'+delta)
+        draw_arrow(img);
+        Y = size(img,1)/2;
+        X = size(img,2)/2;
+        quiver(X,Y,(U1+U2)/2,(V1+V2)/2,'LineWidth',1.5,'color','blue','MaxHeadSize',5);
+        surf(img)
+        hold on;
+        imagesc(img)
+        view(-45,40)
+        axis off;
+        title('(c) Average correlation matrix');
+    end
+        
+%     [sum_scale()
+%     scale_sum_scale()
+%     SNR_sum_scale()
+%     scale_SNR_sum_scale()]
+            
+    hgui=getappdata(0,'hgui');
+    figure(hgui);  
+function [U,V] = draw_arrow(img)
+    [M,I] = max(max(img,[],2));
+    [M,J] = max(max(img,[],1));
+    Y = size(img,1)/2;
+    X = size(img,2)/2;
+    V = I - X;
+    U = J - Y;
+    hold on;
+    quiver(X,Y,U,V,'LineWidth',1.5,'color','red','MaxHeadSize',5);
+function [result_conv] = scale_corr(result_conv)
+    minres = min(min(result_conv));
+    deltares = max(max(result_conv)) - minres;
+    result_conv = ((result_conv-minres)./deltares)*255;
+
+function [result_conv] = list_to_mat(result_conv,xtable)
+    result_conv = permute(reshape(result_conv, [size(result_conv,1) size(result_conv,2) size(xtable')]),[1 2 4 3 5]);
+function [SNRtable] = compute_SNRtable(result_conv,xtable)
+    SNRtable = max(max(result_conv))./nanmean(nanmean(result_conv));
+    SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
+    
+    
+%% sum of correlations then scale_corr
+function [meanSNR,result_conv_mean] = sum_scale()
+    result_conv_passes_list = retr('result_conv_passes_list');
+    SNRtable_list = retr('SNRtable_list');
+    xtable = SNRtable_list{1,1};
+    
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    passes = get_num_passes();
+    result_conv_passes_list = cat(4,result_conv_passes_list{passes,:});
+    result_conv_sum = nansum(result_conv_passes_list,4);
+    result_conv_mean = scale_corr(result_conv_sum);
+
+    SNRtable = compute_SNRtable(result_conv_mean,xtable);
+    meanSNR = mean(mean(SNRtable));    
+%% scale_corr then sum of correlation then scale_corr
+function [meanSNR,result_conv_mean] = scale_sum_scale()
+    result_conv_passes_list = retr('result_conv_passes_list');
+    SNRtable_list = retr('SNRtable_list');
+    xtable = SNRtable_list{1,1};
+    passes = get_num_passes();
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    for k = 1:size(result_conv_passes_list,2)
+        result_conv_passes_list{passes,k} = scale_corr(result_conv_passes_list{passes,k});
+    end
+    result_conv_sum = nansum(cat(4,result_conv_passes_list{passes,:}),4);
+    result_conv_mean = scale_corr(result_conv_sum);
+
+    SNRtable = compute_SNRtable(result_conv_mean,xtable);
+    meanSNR = mean(mean(SNRtable));
+    
+%% weighted sum (with SNR) then scale_corr
+function [meanSNR,result_conv_mean] = SNR_sum_scale()
+    result_conv_passes_list = retr('result_conv_passes_list');
+    SNRtable_list = retr('SNRtable_list');
+    xtable = SNRtable_list{1,1};
+    
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    SNRtable_list(isnan(SNRtable_list))=0;
+    passes = get_num_passes();
+    SNRwheights = SNRtable_list;
+    SNRwheights = reshape(permute(SNRwheights,[2 1 3]),1,1,[],size(SNRwheights,3));
+    for i = 1:size(SNRwheights,3)
+        SNRwheights(1,1,i,:) = SNRwheights(1,1,i,:)./norm(squeeze(SNRwheights(1,1,i,:)));
+    end
+    result_conv_passes_list = cat(4,result_conv_passes_list{passes,:});
+    result_conv_passes_list = result_conv_passes_list.*SNRwheights;
+    
+    result_conv_sum = nansum(result_conv_passes_list,4);
+    result_conv_mean = scale_corr(result_conv_sum);
+
+    SNRtable = compute_SNRtable(result_conv_mean,xtable);
+    meanSNR = mean(mean(SNRtable));
+
+%% scale_corr then weighted sum (with SNR) then scale_corr
+function [meanSNR,result_conv_mean] = scale_SNR_sum_scale()
+    passes = get_num_passes();
+    result_conv_passes_list = retr('result_conv_passes_list');
+    for k = 1:size(result_conv_passes_list,2)
+        result_conv_passes_list{passes,k} = scale_corr(result_conv_passes_list{passes,k});
+    end
+    
+    SNRtable_list = retr('SNRtable_list');
+    xtable = SNRtable_list{1,1};
+    
+    SNRtable_list = cat(3,SNRtable_list{1,:});
+    SNRtable_list(isnan(SNRtable_list))=0;
+
+    SNRwheights = SNRtable_list;
+    SNRwheights = reshape(permute(SNRwheights,[2 1 3]),1,1,[],size(SNRwheights,3));
+    for i = 1:size(SNRwheights,3)
+        SNRwheights(1,1,i,:) = SNRwheights(1,1,i,:)./norm(squeeze(SNRwheights(1,1,i,:)));
+    end
+    result_conv_passes_list = cat(4,result_conv_passes_list{passes,:});
+    result_conv_passes_list = result_conv_passes_list.*SNRwheights;
+    
+    result_conv_sum = nansum(result_conv_passes_list,4);
+    result_conv_mean = scale_corr(result_conv_sum);
+
+    SNRtable = compute_SNRtable(result_conv_mean,xtable);
+    meanSNR = mean(mean(SNRtable));
+
+            
+function[passes] = get_num_passes()
+    handles=gethand;
+    passes=1;
+    if get(handles.checkbox26,'value')==1
+        passes=2;
+    end
+    if get(handles.checkbox27,'value')==1
+        passes=3;
+    end
+    if get(handles.checkbox28,'value')==1
+        passes=4;
+    end
+        

@@ -7171,7 +7171,6 @@ function clear_GRP_rect_Callback(hObject, eventdata, handles)
 function stabilize_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
     fixedPoints = retr('fixedPoints');
-    crop_rect = retr('crop_rect')
     fixedFrame = imread(filepaths{1});
     fixed_ref = imref2d(size(fixedFrame));
     h = waitbar(0,'loading, please wait');
@@ -7186,7 +7185,7 @@ function stabilize_Callback(hObject, eventdata, handles)
         t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
         moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
         imshow(moving_registered);
-        imwrite(imcrop(moving_registered,crop_rect), filepaths{i})
+        imwrite(moving_registered, filepaths{i})
     end
     close(h)
     

@@ -307,6 +307,7 @@ if size(filepath,1)>0
         %1=vectors only
         if displaywhat==1 %vectors only
             currentimage=imread(filepath{selected});
+<<<<<<< HEAD
             if get(handles.GRP_visibility,'Value') == 1
                 i = 1000         
                 fP = retr('fixedPoints');
@@ -328,6 +329,13 @@ if size(filepath,1)>0
                 vectorcolor=[str2double(get(handles.validr,'string')) str2double(get(handles.validg,'string')) str2double(get(handles.validb,'string'))];
                 %vectorcolor='g';
             end
+=======
+            image(currentimage, 'parent',gca, 'cdatamapping', 'scaled');
+            colormap('gray');
+            
+            vectorcolor=[str2double(get(handles.validr,'string')) str2double(get(handles.validg,'string')) str2double(get(handles.validb,'string'))];
+            %vectorcolor='g';
+>>>>>>> parent of 8d8761f... jhv
             %end
         else %displaywhat>1
             if size(derived,2)>=(currentframe+1)/2 && numel(derived{displaywhat-1,(currentframe+1)/2})>0 %derived parameters requested and existant
@@ -398,6 +406,7 @@ if size(filepath,1)>0
             maximgy=max(max(resultslist{2,1}))+min(min(resultslist{2,1}));
             currentimage=zeros(maximgy,maximgx);
         end
+<<<<<<< HEAD
         if get(handles.GRP_visibility,'Value') == 1
             i = 1000         
             fP = retr('fixedPoints')
@@ -409,6 +418,8 @@ if size(filepath,1)>0
                 currentimage = insertMarker(currentimage,fixedPoints,'+');
             end
         end
+=======
+>>>>>>> parent of 8d8761f... jhv
         image(currentimage, 'parent',gca, 'cdatamapping', 'scaled');
         colormap('gray');
         vectorcolor=[str2double(get(handles.validr,'string')) str2double(get(handles.validg,'string')) str2double(get(handles.validb,'string'))];
@@ -553,8 +564,13 @@ if size(filepath,1)>0
                 load hsbmap.mat;
                 CC = colormap(hsb);
             elseif selected_index== 1 %rainbow
+<<<<<<< HEAD
                 load parula.mat;
                 CC = colormap (parula);
+=======
+                load rainbow.mat;
+                CC = colormap (rainbow);
+>>>>>>> parent of 8d8761f... jhv
             else
                 CC = colormap(avail_maps{selected_index});
             end
@@ -562,13 +578,20 @@ if size(filepath,1)>0
             index = get(handles.quiverc_color_bar_pos,'Value');
             color_bar_pos = posichoice{index};
             color_bar_enable = get(handles.quiverc_color_bar_enable,'value');
+<<<<<<< HEAD
             caluv = retr('caluv');
+=======
+>>>>>>> parent of 8d8761f... jhv
             q=quiverc(x_reduced,y_reduced,...
                 (u_reduced-(subtr_u/caluv))*vecscale,...
                 (v_reduced-(subtr_v/caluv))*vecscale,CC,str2double(get(handles.vecwidth,'string')),...
                 color_bar_enable,...
                 color_bar_pos,...
+<<<<<<< HEAD
                 vecscale,caluv);
+=======
+                vecscale);
+>>>>>>> parent of 8d8761f... jhv
             q2 = [];
         else
             vectorcolorintp=[str2double(get(handles.interpr,'string')) str2double(get(handles.interpg,'string')) str2double(get(handles.interpb,'string'))];
@@ -1096,9 +1119,15 @@ function poly_extract_Callback(hObject, eventdata, handles)
 handles=gethand;
 switchui('multip12')
 if retr('caluv')==1 && retr('calxy')==1
+<<<<<<< HEAD
     set(handles.extraction_choice,'string', {'Vorticity [1/frame]';'Velocity magnitude [px/frame]';'u component [px/frame]';'v component [px/frame]';'Divergence [1/frame]';'Vortex locator [1]';'Shear rate [1/frame]';'Strain rate [1/frame]';'Tangent velocity [px/frame]';'Perpendicular velocity [px/frame]'});
 else
     set(handles.extraction_choice,'string', {'Vorticity [1/s]';'Velocity magnitude [m/s]';'u component [m/s]';'v component [m/s]';'Divergence [1/s]';'Vortex locator [1]';'Shear rate [1/s]';'Strain rate [1/s]';'Tangent velocity [m/s]';'Perpendicular velocity [m/s]'});
+=======
+    set(handles.extraction_choice,'string', {'Vorticity [1/frame]';'Velocity magnitude [px/frame]';'u component [px/frame]';'v component [px/frame]';'Divergence [1/frame]';'Vortex locator [1]';'Shear rate [1/frame]';'Strain rate [1/frame]';'Tangent velocity [px/frame]'});
+else
+    set(handles.extraction_choice,'string', {'Vorticity [1/s]';'Velocity magnitude [m/s]';'u component [m/s]';'v component [m/s]';'Divergence [1/s]';'Vortex locator [1]';'Shear rate [1/s]';'Strain rate [1/s]';'Tangent velocity [m/s]'});
+>>>>>>> parent of 8d8761f... jhv
 end
 
 function dist_angle_Callback(hObject, eventdata, handles)
@@ -1770,7 +1799,11 @@ if ok==1
     handles=gethand;
     filepath=retr('filepath');
     filename=retr('filename');
+<<<<<<< HEAD
     result_conv_passes_sum = cell(0);
+=======
+    result_conv_passes_mean = cell(0);
+>>>>>>> parent of 8d8761f... jhv
     result_conv_passes_SNRmean = cell(0);
     result_conv_passes_list = cell(0);
     resultslist=cell(0); %clear old results
@@ -1896,8 +1929,12 @@ if ok==1
             end
         
             if is_dcc ==1
+<<<<<<< HEAD
                 passes = 1;
                 [x y u v typevector result_conv_passes SNRtable] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+=======
+                [x y u v typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+>>>>>>> parent of 8d8761f... jhv
             else
                 [x y u v typevector result_conv_passes SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
                 %u=real(u)
@@ -1912,6 +1949,10 @@ if ok==1
             SNRtable_list{1,(i+1)/2} = SNRtable;
             if  get(handles.Save_correlations,'value') ==1
                 if mod((i-1)/2,frame_spacing_corr) == 0
+<<<<<<< HEAD
+=======
+                    i
+>>>>>>> parent of 8d8761f... jhv
                     for j = 1:passes
 %                         if i == 1
 %                             n = floor(size(filepath,1)/2)
@@ -1925,17 +1966,30 @@ if ok==1
                     end
                 end
             end
+<<<<<<< HEAD
             if isempty(result_conv_passes_sum)
                 result_conv_passes_sum = result_conv_passes;
                 result_conv_passes_SNRmean = result_conv_passes;
             else
                 for j=1:length(result_conv_passes_sum)
                     result_conv_passes_sum{j} = result_conv_passes_sum{j} + result_conv_passes{j};
+=======
+            if isempty(result_conv_passes_mean)
+                result_conv_passes_mean = result_conv_passes;
+                result_conv_passes_SNRmean = result_conv_passes;
+            else
+                for j=1:length(result_conv_passes_mean)
+                    result_conv_passes_mean{j} = result_conv_passes_mean{j} + result_conv_passes{j};
+>>>>>>> parent of 8d8761f... jhv
                 end
             end
             put('SNRtable_list',SNRtable_list);
             put('resultslist',resultslist);
+<<<<<<< HEAD
             put('result_conv_passes_sum',result_conv_passes_sum);
+=======
+            put('result_conv_passes_mean',result_conv_passes_mean);
+>>>>>>> parent of 8d8761f... jhv
             put('result_conv_passes_list',result_conv_passes_list);
             set(handles.fileselector, 'value', (i+1)/2);
             set(handles.progress, 'string' , ['Frame progress: 100%'])
@@ -1957,7 +2011,11 @@ if ok==1
             secs=floor(secs);
             set(handles.totaltime,'string', ['Time left: ' sprintf('%2.2d', hrs) 'h ' sprintf('%2.2d', mins) 'm ' sprintf('%2.2d', secs) 's']);
         end %cancel==0
+<<<<<<< HEAD
     end     
+=======
+    end
+>>>>>>> parent of 8d8761f... jhv
     delete(findobj('tag', 'annoyingthing'));
     set(handles.overall, 'string' , ['Total progress: ' int2str(100) '%'])
     set(handles.totaltime, 'String','Time left: N/A');
@@ -2045,9 +2103,13 @@ if ok==1
         step=str2double(get(handles.step, 'string'));
         subpixfinder=get(handles.subpix,'value');
         if get(handles.dcc,'Value')==1
+<<<<<<< HEAD
             tic
             [x y u v typevector result_conv SNRtable] = piv_DCC(image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
             toc
+=======
+            [x y u v typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roirect);
+>>>>>>> parent of 8d8761f... jhv
         elseif get(handles.fftmulti,'Value')==1
             passes=1;
             if get(handles.checkbox26,'value')==1
@@ -2064,9 +2126,13 @@ if ok==1
             int4=str2num(get(handles.edit52,'string'));
             contents = get(handles.popupmenu16,'string');
             imdeform=contents{get(handles.popupmenu16,'Value')};
+<<<<<<< HEAD
             tic
             [x y u v typevector result_conv SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
             toc
+=======
+            [x y u v typevector result_conv SNRtable] = piv_FFTmulti (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform);
+>>>>>>> parent of 8d8761f... jhv
 %             h = figure
 %             surf(SNRtable)
 %             hgui=getappdata(0,'hgui');
@@ -2564,13 +2630,21 @@ if size(resultslist,2)>=frame
             v(info1==1)=NaN;
         end
         %% signal to noise check
+<<<<<<< HEAD
         ismean = retr('ismean');
+=======
+        ismean = retr('ismean')
+>>>>>>> parent of 8d8761f... jhv
         if get(handles.SNR_filter, 'value')==1
             if isempty(ismean) || ismean(frame,1) ~= 1
                 thresh=str2double(get(handles.SNR_tresh,'string'));
                 SNRtable_list = retr('SNRtable_list');
                 SNRtable = SNRtable_list{1,frame};
+<<<<<<< HEAD
                 SNRtable = SNRtable ./ max(max(SNRtable));%norm(SNRtable(~isnan(SNRtable)))
+=======
+                SNRtable = SNRtable ./ max(max(SNRtable));
+>>>>>>> parent of 8d8761f... jhv
                 u(SNRtable<thresh)=NaN;
                 v(SNRtable<thresh)=NaN;
             end
@@ -3563,8 +3637,12 @@ for i=startfr:endfr
                 wholeLOT=[distance c];
             end
             fid = fopen(fullfile(PathName,FileName_final), 'w');
+<<<<<<< HEAD
             %%% COMMENT TO REMOVE HEADER
             %%%%fprintf(fid, [header '\r\n']);
+=======
+            fprintf(fid, [header '\r\n']);
+>>>>>>> parent of 8d8761f... jhv
             fclose(fid);
             dlmwrite(fullfile(PathName,FileName_final), wholeLOT, '-append', 'delimiter', ',', 'precision', 10, 'newline', 'pc');
         end
@@ -3608,7 +3686,11 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
                 
                 distance=linspace(0,length,size(c,1))';
                 
+<<<<<<< HEAD
             case {9,10} %tangent
+=======
+            case 9 %tangent
+>>>>>>> parent of 8d8761f... jhv
                 if size(xposition,1)<=1 %user did not choose circle series
                     if size(resultslist,1)>6 %filtered exists
                         if size(resultslist,1)>10 && numel(resultslist{10,currentframe}) > 0 %smoothed exists
@@ -3665,6 +3747,7 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
                     end
                     sinalpha(1,1)=sinalpha(1,2);
                     cosalpha(1,1)=cosalpha(1,2);
+<<<<<<< HEAD
                     if extractwhat ==9
                         cu=cu.*cosalpha';
                         cv=cv.*sinalpha';
@@ -3672,6 +3755,10 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
                         cu=cu.*sinalpha';
                         cv=cv.*cosalpha';
                     end
+=======
+                    cu=cu.*cosalpha';
+                    cv=cv.*sinalpha';
+>>>>>>> parent of 8d8761f... jhv
                     c=cu-cv;
                     cx=cx';
                     cy=cy';
@@ -3980,6 +4067,7 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
     nrofbins=str2double(get(handles.nrofbins, 'string'));
     if choice_plot==1
         [n xout]=hist(u*caluv-retr('subtr_u'),nrofbins);
+<<<<<<< HEAD
         mn = mean(mean(u));
         xdescript='velocity (u)';
     elseif choice_plot==2
@@ -3995,6 +4083,17 @@ if size(resultslist,2)>=currentframe && numel(resultslist{1,currentframe})>0
     h2=bar(xout,n);
     hax = gca;
     line([mn mn],get(hax,'YLim'),'color','r','LineWidth',2);
+=======
+        xdescript='velocity (u)';
+    elseif choice_plot==2
+        [n xout]=hist(v*caluv-retr('subtr_v'),nrofbins);
+        xdescript='velocity (v)';
+    elseif choice_plot==3
+        [n xout]=hist(sqrt((u*caluv-retr('subtr_u')).^2+(v*caluv-retr('subtr_v')).^2),nrofbins);
+        xdescript='velocity magnitude';
+    end
+    h2=bar(xout,n);
+>>>>>>> parent of 8d8761f... jhv
     set (gca, 'xgrid', 'on', 'ygrid', 'on', 'TickDir', 'in')
     if retr('caluv')==1 && retr('calxy')==1
         xlabel([xdescript ' [px/frame]']);
@@ -4413,7 +4512,11 @@ else
     put('sessionpath',PathName );
     put('derived',[]);
     put('resultslist',[]);
+<<<<<<< HEAD
     put('result_conv_passes_sum',[]);
+=======
+    put('result_conv_passes_mean',[]);
+>>>>>>> parent of 8d8761f... jhv
     put('maskiererx',[]);
     put('maskierery',[]);
     put('roirect',[]);
@@ -4422,7 +4525,11 @@ else
     put('filepath',[]);
     hgui=getappdata(0,'hgui');
     warning off all
+<<<<<<< HEAD
     vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_sum','result_conv_passes_list');
+=======
+    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_mean','result_conv_passes_list');
+>>>>>>> parent of 8d8761f... jhv
     names=fieldnames(vars);
     for i=1:size(names,1)
         setappdata(hgui,names{i},vars.(names{i}))
@@ -6062,9 +6169,12 @@ if isempty(resultslist)==0
                     if get(handles.checkbox28,'value')==1
                         passes=4;
                     end
+<<<<<<< HEAD
                     if get(handles.dcc,'Value') == 1
                         passes =1;
                     end
+=======
+>>>>>>> parent of 8d8761f... jhv
                     int2=str2num(get(handles.edit50,'string'));
                     int3=str2num(get(handles.edit51,'string'));
                     int4=str2num(get(handles.edit52,'string'));
@@ -6073,6 +6183,7 @@ if isempty(resultslist)==0
                     roirect=retr('roirect');
                     result_conv_passes_list = retr('result_conv_passes_list');
                     if get(handles.Save_correlations,'value') == 1
+<<<<<<< HEAD
                         if get(handles.SNR_weights,'value') == 1
                             SNRtable_list = retr('SNRtable_list');
                             xtable = SNRtable_list{1,1};
@@ -6156,6 +6267,62 @@ if isempty(resultslist)==0
 %                         result_conv_passes_sum{i} = result_conv;
 %                     end
                     %new x y u v typevector result_conv
+=======
+                        result_conv_passes_mean = cell(0);
+                        [x,y,u,v,typevector] = getxyuv(resultslist,1);
+                        result_conv_passes_list{passes,1}(:,:,isnan(reshape(permute(u,[2 1 3]),1,1,[]))) = 0;
+                        if get(handles.SNR_weights,'value') == 1
+                            SNRtable_list = retr('SNRtable_list');
+                            result_conv_passes_list{passes,1} = reshape(permute(SNRtable_list{1,1},[2 1 3]),1,1,[]) .* result_conv_passes_list{passes,1};
+                        end
+                        for j = 2:size(result_conv_passes_list,2)
+                            [x,y,u,v,typevector] = getxyuv(resultslist,j);
+                            result_conv_passes_list{passes,j}(:,:,isnan(reshape(permute(u,[2 1 3]),1,1,[]))) = 0;
+                            if get(handles.SNR_weights,'value') == 1
+                                result_conv_passes_list{passes,j} = reshape(permute(SNRtable_list{1,j},[2 1 3]),1,1,[]) .* result_conv_passes_list{passes,j};
+                            end
+                        end
+                        for i = 1:passes
+%                             if get(handles.SNR_weights,'value') == 1
+%                                 SNRtable_list = retr('SNRtable_list');
+%                                 result_conv_passes_mean{i} = reshape(permute(SNRtable_list{1,1},[2 1 3]),1,1,[]).*result_conv_passes_list{i,1};
+%                                 for j = 2:size(result_conv_passes_list,2)
+%                                     [x,y,u,v,typevector] = getxyuv(resultslist,j);
+%                                     result_conv_passes_mean{i} = result_conv_passes_mean{i} + reshape(permute(SNRtable_list{1,j},[2 1 3]),1,1,[]) .* result_conv_passes_list{i,j};
+%                                 end
+%                             else
+                                result_conv_passes_mean{i} = result_conv_passes_list{i,1};
+                                for j = 2:size(result_conv_passes_list,2)
+                                    if isempty(result_conv_passes_list{i,j})==0
+                                        size(result_conv_passes_mean{i})
+                                        size(result_conv_passes_list{i,j})
+                                        result_conv_passes_mean{i} = result_conv_passes_mean{i} + result_conv_passes_list{i,j};
+                                    end
+                                end
+%                             end
+                        end
+                    else
+                        result_conv_passes_mean = retr('result_conv_passes_mean');
+                    end
+                    for i = 1:passes
+                        result_conv = result_conv_passes_mean{i};
+                        minres = min(min(result_conv));
+                        deltares = max(max(result_conv)) - minres;
+                        result_conv = ((result_conv-minres)./deltares)*255;
+                        result_conv_passes_mean{i} = result_conv;
+                        size(result_conv_passes_mean{i})
+                    end
+%                     for i= 1:length(result_conv_passes_mean)
+%                         result_conv = result_conv_passes_mean{i};
+%                         minres = min(min(result_conv));
+%                         deltares = max(max(result_conv)) - minres;
+%                         result_conv = ((result_conv-minres)./deltares)*255;
+%                         result_conv_passes_mean{i} = result_conv;
+%                     end
+                    %new x y u v typevector result_conv
+                    step
+                    interrogationarea
+>>>>>>> parent of 8d8761f... jhv
                     [x y u v typevector] = piv_FFTmulti_mean2 (image1,image2,interrogationarea, step, subpixfinder, mask, roirect,passes,int2,int3,int4,imdeform,result_conv_passes_mean);
 
                     
@@ -7203,6 +7370,7 @@ function select_GRP_rect_Callback(hObject, eventdata, handles)
     objectRegion=round(getPosition(imrect));
 %     new_points = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
 %     new_points = detectFASTFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+<<<<<<< HEAD
     if size(fixedFrame,3)==3
         new_points = detectHarrisFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
     else
@@ -7227,11 +7395,44 @@ function clear_last_GRP_rect_Callback(hObject, eventdata, handles)
     fixedPoints(end) = [];
     put('fixedPoints',fixedPoints);
     sliderdisp;
+=======
+    new_points = detectHarrisFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+    if isempty(fixedPoints)
+        fixedPoints = new_points.selectStrongest(20);
+    else
+        fixedPoints = [fixedPoints; new_points.selectStrongest(20)];
+    end
+    example = insertMarker(fixedFrame,fixedPoints,'+');
+    imshow(example);
+    put('fixedPoints',fixedPoints);
+%     filepaths =retr('filepath');
+%     fixedFrame = imread(filepaths{1});
+%     imshow(fixedFrame);
+%     
+%     objectRegion=round(getPosition(imrect));
+%     fixedPoints = detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion);
+%     for i = 1:3
+%         objectRegion = round(getPosition(imrect));
+%         fixedPoints = [fixedPoints; detectMinEigenFeatures(rgb2gray(fixedFrame),'ROI',objectRegion)];
+%     end
+%     example = insertMarker(fixedFrame,fixedPoints,'+');
+%     imshow(example);
+%     put('fixedPoints',fixedPoints);
+
+% --- Executes on button press in clear_GRP_rect.
+function clear_GRP_rect_Callback(hObject, eventdata, handles)
+    put ('fixedPoints',{});
+    filepaths =retr('filepath');
+    fixedFrame = imread(filepaths{1});
+    imshow(fixedFrame);
+    
+>>>>>>> parent of 8d8761f... jhv
 
 
 % --- Executes on button press in stabilize.
 function stabilize_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
+<<<<<<< HEAD
     fP = retr('fixedPoints');
     if isempty(fP) == 0
         fixedPoints = fP{1};  
@@ -7240,6 +7441,10 @@ function stabilize_Callback(hObject, eventdata, handles)
         end
     end
     
+=======
+    fixedPoints = retr('fixedPoints');
+    crop_rect = retr('crop_rect')
+>>>>>>> parent of 8d8761f... jhv
     fixedFrame = imread(filepaths{1});
     fixed_ref = imref2d(size(fixedFrame));
     h = waitbar(0,'loading, please wait');
@@ -7254,10 +7459,15 @@ function stabilize_Callback(hObject, eventdata, handles)
         t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
         moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
         imshow(moving_registered);
+<<<<<<< HEAD
         imwrite(moving_registered, filepaths{i})
     end
     set(handles.GRP_visibility,'value',0);
     sliderdisp;
+=======
+        imwrite(imcrop(moving_registered,crop_rect), filepaths{i})
+    end
+>>>>>>> parent of 8d8761f... jhv
     close(h)
     
 
@@ -7400,6 +7610,7 @@ function [x,y,u,v,typevector] =  getxyuv(resultslist,count)
         v=resultslist{4,count};
         typevector=resultslist{5,count};
     end
+<<<<<<< HEAD
 
 
 % --- Executes on button press in TEST.
@@ -7620,3 +7831,5 @@ function GRP_visibility_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of GRP_visibility
+=======
+>>>>>>> parent of 8d8761f... jhv

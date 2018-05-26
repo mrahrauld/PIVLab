@@ -7227,6 +7227,26 @@ function clear_last_GRP_rect_Callback(hObject, eventdata, handles)
 % --- Executes on button press in stabilize.
 function stabilize_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
+<<<<<<< HEAD
+    fixedPoints = retr('fixedPoints');
+    fixedFrame = imread(filepaths{1});
+    fixed_ref = imref2d(size(fixedFrame));
+    h = waitbar(0,'loading, please wait');
+    pointImage = insertMarker(fixedFrame,fixedPoints.Location,'+','Color','white');
+    tracker = vision.PointTracker('MaxBidirectionalError',1);
+    initialize(tracker,fixedPoints.Location,fixedFrame);
+    steps = length(filepaths);
+    for i=1:length(filepaths)
+        waitbar(i/steps);
+        frame = imread(filepaths{i});
+        [movingPoints, validity] = step(tracker,frame);
+        t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
+        moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
+        imshow(moving_registered);
+        imwrite(moving_registered, filepaths{i})
+    end
+    close(h)
+=======
     fP = retr('fixedPoints');
     if isempty(fP) == 0
         toolsavailable(0);
@@ -7254,6 +7274,7 @@ function stabilize_Callback(hObject, eventdata, handles)
         sliderdisp;
         toolsavailable(1);
     end
+>>>>>>> 0557199da932c7b7ca8d9f1b3f7edd6ad22a1984
     
 
 

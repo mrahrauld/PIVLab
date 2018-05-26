@@ -307,6 +307,15 @@ if size(filepath,1)>0
         %1=vectors only
         if displaywhat==1 %vectors only
             currentimage=imread(filepath{selected});
+            if get(handles.GRP_visibility,'Value') == 1
+                i = 1000         
+                fP = retr('fixedPoints');
+                fixedPoints = [];
+                for i = 1:size(fP,1)
+                    fixedPoints = [fixedPoints ; fP{i}];
+                end
+                currentimage = insertMarker(currentimage,fixedPoints,'+');
+            end
             if get(handles.quiverc_enable,'value')==1
                 if size(currentimage,3)==1
                     currentimage = cat(3,currentimage,currentimage,currentimage);
@@ -391,11 +400,11 @@ if size(filepath,1)>0
         end
         if get(handles.GRP_visibility,'Value') == 1
             i = 1000         
-            fP = retr('fixedPoints');
+            fP = retr('fixedPoints')
             if isempty(fP) == 0
                 fixedPoints = fP{1};  
                 for i = 2:size(fP,2)
-                    fixedPoints = vertcat(fixedPoints,fP{i});
+                    fixedPoints = vertcat(fixedPoints,fP{i})
                 end
                 currentimage = insertMarker(currentimage,fixedPoints,'+');
             end
@@ -7225,31 +7234,31 @@ function stabilize_Callback(hObject, eventdata, handles)
     filepaths =retr('filepath');
     fP = retr('fixedPoints');
     if isempty(fP) == 0
-        toolsavailable(0);
         fixedPoints = fP{1};  
         for i = 2:size(fP,2)
             fixedPoints = vertcat(fixedPoints,fP{i})
         end
-        fixedFrame = imread(filepaths{1});
-        fixed_ref = imref2d(size(fixedFrame));
-        pointImage = insertMarker(fixedFrame,fixedPoints.Location,'+','Color','white');
-        tracker = vision.PointTracker('MaxBidirectionalError',1);
-        initialize(tracker,fixedPoints.Location,fixedFrame);
-        steps = length(filepaths);
-        for i=1:length(filepaths)
-            frame = imread(filepaths{i});
-            [movingPoints, validity] = step(tracker,frame);
-            t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
-            moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
-            imshow(moving_registered);
-            imwrite(moving_registered, filepaths{i})
-            set(handles.stabilize, 'string' , [int2str((i/steps)*100) '%'])
-        end
-        set(handles.stabilize, 'string' , ['Stabilize!'])
-        set(handles.GRP_visibility,'value',0);
-        sliderdisp;
-        toolsavailable(1);
     end
+    
+    fixedFrame = imread(filepaths{1});
+    fixed_ref = imref2d(size(fixedFrame));
+    h = waitbar(0,'loading, please wait');
+    pointImage = insertMarker(fixedFrame,fixedPoints.Location,'+','Color','white');
+    tracker = vision.PointTracker('MaxBidirectionalError',1);
+    initialize(tracker,fixedPoints.Location,fixedFrame);
+    steps = length(filepaths);
+    for i=1:length(filepaths)
+        waitbar(i/steps);
+        frame = imread(filepaths{i});
+        [movingPoints, validity] = step(tracker,frame);
+        t_concord = fitgeotrans(movingPoints,fixedPoints.Location,'projective');
+        moving_registered = imwarp(frame,t_concord,'OutputView',fixed_ref);
+        imshow(moving_registered);
+        imwrite(moving_registered, filepaths{i})
+    end
+    set(handles.GRP_visibility,'value',0);
+    sliderdisp;
+    close(h)
     
 
 

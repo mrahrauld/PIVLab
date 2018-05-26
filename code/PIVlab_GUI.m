@@ -6063,6 +6063,10 @@ if isempty(resultslist)==0
                     imdeform=contents{get(handles.popupmenu16,'Value')};
                     roirect=retr('roirect');
                     result_conv_passes_list = retr('result_conv_passes_list');
+                    for j = 2:size(result_conv_passes_list,2)
+                        [x,y,u,v,typevector] = getxyuv(resultslist,j);
+                       result_conv_passes_list{passes,j}(:,:,isnan(reshape(permute(u,[2 1 3]),1,1,[]))) = 0;
+                    end
                     if get(handles.Save_correlations,'value') == 1
                         if get(handles.SNR_weights,'value') == 1
                             SNRtable_list = retr('SNRtable_list');

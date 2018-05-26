@@ -101,6 +101,8 @@ image2_cut = image2_roi(ss1);
 % typevector(jj) = 0;
 % result_conv(:,:, ii) = 0;
 result_conv = result_conv_passes{1};
+size(result_conv)
+
 [y, x, z] = ind2sub(size(result_conv), find(result_conv==255));
 
  % we need only one peak from each couple pictures

@@ -78,6 +78,8 @@ nrxreal=0;
 nry=0;
 increments=0;
 
+
+image1_roi = conj(image1_roi);
 %% MAINLOOP
 try
 handles=guihandles(getappdata(0,'hgui'));
@@ -116,55 +118,63 @@ for j = miniy:step:maxiy %vertical loop
         if mask(round(j+interrogationarea/2),round(i+interrogationarea/2))==0
             %improves the clarity of the correlation peak.
             image1_crop=image1_crop-mean(mean(image1_crop));
-            size(image1_crop)
             image2_crop=image2_crop-mean(mean(image2_crop));
-            size(image2_crop)
-            res_conv= conv2(image2_crop,rot90(conj(image1_crop),2),'valid');
-            %res_conv= xcorr2(image2_crop,image1_crop);
-            size(res_conv)
+%             image1_crop_list(:,:,k) = rot90(image1_crop,2);
+%             image2_crop_list(:,:,k) = image2_crop;
+            res_conv= conv2(image2_crop,rot90(image1_crop,2),'valid');
             result_conv(:,:,k) = res_conv;
             %image2_crop is bigger than image1_crop. Zeropading is therefore not
             %necessary. 'Valid' makes sure that no zero padded content is
             %returned.
             %result_conv=result_conv/max(max(result_conv))*255; %normalize, peak=always 255
-            res_conv = ((res_conv-min(min(res_conv)))/(max(max(res_conv))-min(min(res_conv))))*255;
             %corr_results{nry,nrxreal}=result_conv;
             %Find the 255 peak
-            [y,x] = find(res_conv==255);
-            if size(x,1)>1 %if there are more than 1 peaks just take the first
-                x=x(1:1);
-            end
-            if size(y,1)>1 %if there are more than 1 peaks just take the first
-                y=y(1:1);
-            end
-            if isnan(y)==0 & isnan(x)==0
-                try
-                    if subpixfinder==1
-                        [vector] = SUBPIXGAUSS (res_conv,interrogationarea,x,y,SubPixOffset);
-                    elseif subpixfinder==2
-                        [vector] = SUBPIX2DGAUSS (res_conv,interrogationarea,x,y,SubPixOffset);
-                    end
-                catch
-                    vector=[NaN NaN]; %if something goes wrong with cross correlation.....
-                end
-            else
-                vector=[NaN NaN]; %if something goes wrong with cross correlation.....
-            end
         else %if mask was not 0 then
             vector=[NaN NaN];
             typevector(nry,nrxreal)=0;
         end
+        
 
         %Create the vector matrix x, y, u, v
         xtable(nry,nrxreal)=startpoint(1)+interrogationarea/2;
         ytable(nry,:)=startpoint(1,2)+interrogationarea/2;
-        utable(nry,nrxreal)=vector(1);
-        vtable(nry,nrxreal)=vector(2);
         
         k = k+1;
      end
 
 end
+result_conv_passes{1} = result_conv;
+minres = min(min(result_conv));
+deltares = max(max(result_conv)) - minres;
+result_conv = ((result_conv-minres)./deltares)*255;
+% size(image1_crop_list)
+% size(image2_crop_list)
+% %A = convn(image2_crop_list,image1_crop,'valid');
+% size(A)
+
+
+[y, x, z] = ind2sub(size(result_conv), find(result_conv==255));
+
+[z1, zi] = sort(z);
+dz1 = [z1(1); diff(z1)];
+i0 = find(dz1~=0);
+x1 = x(zi(i0));
+y1 = y(zi(i0));
+z1 = z(zi(i0));
+
+if subpixfinder==1
+    [vector] = SUBPIXGAUSS (result_conv,interrogationarea, x1, y1, z1, SubPixOffset);
+elseif subpixfinder==2
+    [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea, x1, y1, z1, SubPixOffset);
+end
+vector = permute(reshape(vector, [size(xtable') 2]), [2 1 3]);
+utable = vector(:,:,1);
+vtable = vector(:,:,2);
+
+
+SNRtable = max(max(result_conv))./mean(mean(result_conv));
+SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
+
 
 xtable=xtable-ceil(interrogationarea/2);
 ytable=ytable-ceil(interrogationarea/2);
@@ -176,12 +186,7 @@ utable(utable>interrogationarea/1.5)=NaN;
 vtable(utable>interrogationarea/1.5)=NaN;
 vtable(vtable>interrogationarea/1.5)=NaN;
 utable(vtable>interrogationarea/1.5)=NaN;
-result_conv_passes{1} = result_conv;
-minres = min(min(result_conv));
-deltares = max(max(result_conv)) - minres;
-result_conv = ((result_conv-minres)./deltares)*255;
-SNRtable = max(max(result_conv))./mean(mean(result_conv));
-SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
+
 %assignin('base','corr_results',corr_results);
 %assignin('base','x',xtable);
 %assignin('base','y',ytable);
@@ -189,68 +194,76 @@ SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
 %assignin('base','v',vtable);
 
 
-function [vector] = SUBPIXGAUSS (result_conv,interrogationarea,x,y,SubPixOffset)
-if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
-    %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion – Israel Institute of Technology
-    %http://urapiv.wordpress.com
-    f0 = log(result_conv(y,x));
-    f1 = log(result_conv(y-1,x));
-    f2 = log(result_conv(y+1,x));
-    peaky = y+ (f1-f2)/(2*f1-4*f0+2*f2);
-    f0 = log(result_conv(y,x));
-    f1 = log(result_conv(y,x-1));
-    f2 = log(result_conv(y,x+1));
-    peakx = x+ (f1-f2)/(2*f1-4*f0+2*f2);
-    %
-    SubpixelX=peakx-(interrogationarea/2)-SubPixOffset;
-    SubpixelY=peaky-(interrogationarea/2)-SubPixOffset;
-    vector=[SubpixelX, SubpixelY];
-else
-    vector=[NaN NaN];
-end
+function [vector] = SUBPIXGAUSS(result_conv, interrogationarea, x, y, z, SubPixOffset)
+    xi = find(~((x <= (size(result_conv,2)-1)) & (y <= (size(result_conv,1)-1)) & (x >= 2) & (y >= 2)));
+    x(xi) = [];
+    y(xi) = [];
+    z(xi) = [];
+    xmax = size(result_conv, 2);
+    vector = NaN(size(result_conv,3), 2);
+    if(numel(x)~=0)
+        ip = sub2ind(size(result_conv), y, x, z);
+        %the following 8 lines are copyright (c) 1998, Uri Shavit, Roi Gurka, Alex Liberzon, Technion ï¿½ Israel Institute of Technology
+        %http://urapiv.wordpress.com
+        f0 = log(result_conv(ip));
+        f1 = log(result_conv(ip-1));
+        f2 = log(result_conv(ip+1));
+        peaky = y + (f1-f2)./(2*f1-4*f0+2*f2);
+        f0 = log(result_conv(ip));
+        f1 = log(result_conv(ip-xmax));
+        f2 = log(result_conv(ip+xmax));
+        peakx = x + (f1-f2)./(2*f1-4*f0+2*f2);
 
-function [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea,x,y,SubPixOffset)
-if (x <= (size(result_conv,1)-1)) && (y <= (size(result_conv,1)-1)) && (x >= 1) && (y >= 1)
-    c10=zeros(3,3);
-    c01=c10;
-    c11=c10;
-    c20=c10;
-    c02=c10;
-    for i=-1:1
-        for j=-1:1
-            %following 15 lines based on
-            %H. Nobach Æ M. Honkanen (2005)
-            %Two-dimensional Gaussian regression for sub-pixel displacement
-            %estimation in particle image velocimetry or particle position
-            %estimation in particle tracking velocimetry
-            %Experiments in Fluids (2005) 38: 511–515
-            if i ~= 0
-                c10(j+2,i+2)=i*log(result_conv(y+j, x+i));
-                c11(j+2,i+2)=i*j*log(result_conv(y+j, x+i));
-            end
-            if j~=0
-                c01(j+2,i+2)=j*log(result_conv(y+j, x+i));
-            end
-            c20(j+2,i+2)=(3*i^2-2)*log(result_conv(y+j, x+i));
-            c02(j+2,i+2)=(3*j^2-2)*log(result_conv(y+j, x+i));
-            %c00(j+2,i+2)=(5-3*i^2-3*j^2)*log(result_conv_norm(maxY+j, maxX+i));
-        end
+        SubpixelX=peakx-(interrogationarea/2)-SubPixOffset;
+        SubpixelY=peaky-(interrogationarea/2)-SubPixOffset;
+        vector(z, :) = [SubpixelX, SubpixelY];  
     end
-    c10=(1/6)*sum(sum(c10));
-    c01=(1/6)*sum(sum(c01));
-    c11=(1/4)*sum(sum(c11));
-    c20=(1/6)*sum(sum(c20));
-    c02=(1/6)*sum(sum(c02));
-    %c00=(1/9)*sum(sum(c00));
-    temp=4*c20*c02-c11^2;
-    deltax=(c11*c01-2*c10*c02)/temp;
-    deltay=(c11*c10-2*c01*c20)/temp;
-    peakx=x+deltax;
-    peaky=y+deltay;
+    
+function [vector] = SUBPIX2DGAUSS(result_conv, interrogationarea, x, y, z, SubPixOffset)
+    xi = find(~((x <= (size(result_conv,2)-1)) & (y <= (size(result_conv,1)-1)) & (x >= 2) & (y >= 2)));
+    x(xi) = [];
+    y(xi) = [];
+    z(xi) = [];
+    xmax = size(result_conv, 2);
+    vector = NaN(size(result_conv,3), 2);
+    if(numel(x)~=0)
+        c10 = zeros(3,3, length(z));
+        c01 = c10;
+        c11 = c10;
+        c20 = c10;
+        c02 = c10;
+        ip = sub2ind(size(result_conv), y, x, z);
 
-    SubpixelX=peakx-(interrogationarea/2)-SubPixOffset;
-    SubpixelY=peaky-(interrogationarea/2)-SubPixOffset;
-    vector=[SubpixelX, SubpixelY];
-else
-    vector=[NaN NaN];
-end
+        for i = -1:1
+            for j = -1:1
+                %following 15 lines based on
+                %H. Nobach ï¿½ M. Honkanen (2005)
+                %Two-dimensional Gaussian regression for sub-pixel displacement
+                %estimation in particle image velocimetry or particle position
+                %estimation in particle tracking velocimetry
+                %Experiments in Fluids (2005) 38: 511ï¿½515
+                c10(j+2,i+2, :) = i*log(result_conv(ip+xmax*i+j));
+                c01(j+2,i+2, :) = j*log(result_conv(ip+xmax*i+j));
+                c11(j+2,i+2, :) = i*j*log(result_conv(ip+xmax*i+j));
+                c20(j+2,i+2, :) = (3*i^2-2)*log(result_conv(ip+xmax*i+j));
+                c02(j+2,i+2, :) = (3*j^2-2)*log(result_conv(ip+xmax*i+j));
+                %c00(j+2,i+2)=(5-3*i^2-3*j^2)*log(result_conv_norm(maxY+j, maxX+i));
+            end
+        end
+        c10 = (1/6)*sum(sum(c10));
+        c01 = (1/6)*sum(sum(c01));
+        c11 = (1/4)*sum(sum(c11));
+        c20 = (1/6)*sum(sum(c20));
+        c02 = (1/6)*sum(sum(c02));
+        %c00=(1/9)*sum(sum(c00));
+
+        deltax = squeeze((c11.*c01-2*c10.*c02)./(4*c20.*c02-c11.^2));
+        deltay = squeeze((c11.*c10-2*c01.*c20)./(4*c20.*c02-c11.^2));
+        peakx = x+deltax;
+        peaky = y+deltay;
+
+        SubpixelX = peakx-(interrogationarea/2)-SubPixOffset;
+        SubpixelY = peaky-(interrogationarea/2)-SubPixOffset;
+
+        vector(z, :) = [SubpixelX, SubpixelY];
+    end

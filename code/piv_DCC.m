@@ -1,7 +1,7 @@
-function [xtable ytable utable vtable typevector] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roi)
+function [xtable ytable utable vtable typevector result_conv_passes SNRtable] = piv_DCC (image1,image2,interrogationarea, step, subpixfinder, mask, roi)
 %this funtion performs the DCC PIV analysis. Recent window-deformation
 %methods perform better and will maybe be implemented in the future.
-
+result_conv_passes = cell(0);
 %warning off %MATLAB:log:logOfZero
 if numel(roi)>0
     xroi=roi(1);
@@ -72,7 +72,7 @@ vtable=xtable;
 typevector=ones(numelementsy,numelementsx);
 
 %corr_results=cell(numelementsy,numelementsx);
-
+result_conv = zeros(interrogationarea+1,interrogationarea+1,numelementsy*numelementsx);
 nrx=0;
 nrxreal=0;
 nry=0;
@@ -88,9 +88,10 @@ end
 %nry ersetzen
 %statt j so komisch, eine tabelle machen mit den koordinaten. J muss integer sein
 
-
+k = 1;
 for j = miniy:step:maxiy %vertical loop
     nry=nry+1;
+    
     if increments<6 %reduced display refreshing rate
         increments=increments+1;
     else
@@ -115,16 +116,21 @@ for j = miniy:step:maxiy %vertical loop
         if mask(round(j+interrogationarea/2),round(i+interrogationarea/2))==0
             %improves the clarity of the correlation peak.
             image1_crop=image1_crop-mean(mean(image1_crop));
+            size(image1_crop)
             image2_crop=image2_crop-mean(mean(image2_crop));
-            result_conv= conv2(image2_crop,rot90(conj(image1_crop),2),'valid');
+            size(image2_crop)
+            res_conv= conv2(image2_crop,rot90(conj(image1_crop),2),'valid');
+            %res_conv= xcorr2(image2_crop,image1_crop);
+            size(res_conv)
+            result_conv(:,:,k) = res_conv;
             %image2_crop is bigger than image1_crop. Zeropading is therefore not
             %necessary. 'Valid' makes sure that no zero padded content is
             %returned.
             %result_conv=result_conv/max(max(result_conv))*255; %normalize, peak=always 255
-            result_conv = ((result_conv-min(min(result_conv)))/(max(max(result_conv))-min(min(result_conv))))*255;
+            res_conv = ((res_conv-min(min(res_conv)))/(max(max(res_conv))-min(min(res_conv))))*255;
             %corr_results{nry,nrxreal}=result_conv;
             %Find the 255 peak
-            [y,x] = find(result_conv==255);
+            [y,x] = find(res_conv==255);
             if size(x,1)>1 %if there are more than 1 peaks just take the first
                 x=x(1:1);
             end
@@ -134,9 +140,9 @@ for j = miniy:step:maxiy %vertical loop
             if isnan(y)==0 & isnan(x)==0
                 try
                     if subpixfinder==1
-                        [vector] = SUBPIXGAUSS (result_conv,interrogationarea,x,y,SubPixOffset);
+                        [vector] = SUBPIXGAUSS (res_conv,interrogationarea,x,y,SubPixOffset);
                     elseif subpixfinder==2
-                        [vector] = SUBPIX2DGAUSS (result_conv,interrogationarea,x,y,SubPixOffset);
+                        [vector] = SUBPIX2DGAUSS (res_conv,interrogationarea,x,y,SubPixOffset);
                     end
                 catch
                     vector=[NaN NaN]; %if something goes wrong with cross correlation.....
@@ -154,6 +160,8 @@ for j = miniy:step:maxiy %vertical loop
         ytable(nry,:)=startpoint(1,2)+interrogationarea/2;
         utable(nry,nrxreal)=vector(1);
         vtable(nry,nrxreal)=vector(2);
+        
+        k = k+1;
      end
 
 end
@@ -168,7 +176,12 @@ utable(utable>interrogationarea/1.5)=NaN;
 vtable(utable>interrogationarea/1.5)=NaN;
 vtable(vtable>interrogationarea/1.5)=NaN;
 utable(vtable>interrogationarea/1.5)=NaN;
-
+result_conv_passes{1} = result_conv;
+minres = min(min(result_conv));
+deltares = max(max(result_conv)) - minres;
+result_conv = ((result_conv-minres)./deltares)*255;
+SNRtable = max(max(result_conv))./mean(mean(result_conv));
+SNRtable = permute(reshape(SNRtable, size(xtable')), [2 1 3]);
 %assignin('base','corr_results',corr_results);
 %assignin('base','x',xtable);
 %assignin('base','y',ytable);

@@ -116,12 +116,9 @@ for j = miniy:step:maxiy %vertical loop
         if mask(round(j+interrogationarea/2),round(i+interrogationarea/2))==0
             %improves the clarity of the correlation peak.
             image1_crop=image1_crop-mean(mean(image1_crop));
-            size(image1_crop)
             image2_crop=image2_crop-mean(mean(image2_crop));
-            size(image2_crop)
             res_conv= conv2(image2_crop,rot90(conj(image1_crop),2),'valid');
             %res_conv= xcorr2(image2_crop,image1_crop);
-            size(res_conv)
             result_conv(:,:,k) = res_conv;
             %image2_crop is bigger than image1_crop. Zeropading is therefore not
             %necessary. 'Valid' makes sure that no zero padded content is

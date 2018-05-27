@@ -846,38 +846,22 @@ if isequal(path,0) ==0
     
     imgspacing = retr('imgspacing');
     grayscaling = retr('grayscalingval');
+    imgjumping = retr('imgjumping');
     if grayscaling
         for j = 1:size(path,1)
             I = imread(path(j).name);
             imwrite(uint8(mean(I,3)),path(j).name);
         end
-    end
-    sequencer = retr('sequencer');
-    if sequencer==1
-        for j = 1:2*imgspacing:size(path,1)
-            for i = 0:imgspacing-1
-                if i+j+imgspacing <= size(path,1) && path(i+j).isdir == 0 && path(i+j+imgspacing).isdir ==0%remove directories from selection
-                    if exist('filepath','var')==0 %first loop
-                        filepath{1,1}=path(i+j).name;
-                        filepath{2,1}=path(i+j+imgspacing).name;
-                    else
-                        filepath{size(filepath,1)+1,1}=path(i+j).name;
-                        filepath{size(filepath,1)+1,1}=path(i+j+imgspacing).name;
-                    end
-                end
-            end
-        end
-    else %sequencer=0
-        for i = 1:size(path,1)
-            if i+imgspacing <= size(path,1) 
-                if path(i).isdir == 0 && path(i+imgspacing).isdir == 0 %remove directories from selection
-                    if exist('filepath','var')==0 %first loop
-                        filepath{1,1}=path(i).name;
-                        filepath{2,1}=path(i+imgspacing).name;
-                    else
-                        filepath{size(filepath,1)+1,1}=path(i).name;
-                        filepath{size(filepath,1)+1,1}=path(i+imgspacing).name;
-                    end
+    end    
+    for i = 1:imgjumping:size(path,1)
+        if i+imgspacing <= size(path,1) 
+            if path(i).isdir == 0 && path(i+imgspacing).isdir == 0 %remove directories from selection
+                if exist('filepath','var')==0 %first loop
+                    filepath{1,1}=path(i).name;
+                    filepath{2,1}=path(i+imgspacing).name;
+                else
+                    filepath{size(filepath,1)+1,1}=path(i).name;
+                    filepath{size(filepath,1)+1,1}=path(i+imgspacing).name;
                 end
             end
         end

@@ -4397,7 +4397,7 @@ else
     put('filepath',[]);
     hgui=getappdata(0,'hgui');
     warning off all
-    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_sum','result_conv_passes_list');
+    vars=load(fullfile(PathName,FileName),'yposition', 'FileName', 'PathName', 'add_header', 'addfileinfo', 'autoscale_vec', 'caliimg', 'caluv', 'calxy', 'cancel', 'clahe_enable', 'clahe_size', 'colormap_choice', 'delimiter', 'derived', 'displaywhat', 'distance', 'enable_highpass', 'enable_intenscap', 'epsilon', 'filename', 'filepath', 'highp_size', 'homedir', 'img_not_mask', 'intarea', 'interpol_missing', 'loc_med_thresh', 'loc_median', 'manualdeletion', 'maskiererx', 'maskierery', 'pathname', 'pointscali', 'resultslist', 'roirect', 'sequencer', 'sessionpath', 'stdev_check', 'stdev_thresh', 'stepsize', 'subpix', 'subtr_u', 'subtr_v', 'toggler', 'vectorscale', 'velrect', 'wasdisabled', 'xposition','realdist_string','time_inp_string','streamlinesX','streamlinesY','manmarkersX','manmarkersY','imginterpol','dccmark','fftmark','pass2','pass3','pass4','pass2val','pass3val','pass4val','step2','step3','step4','holdstream','streamlamount','streamlcolor','ismean','wienerwurst','wienerwurstsize','result_conv_passes_sum','result_conv_passes_list','SNRtable_list');
     names=fieldnames(vars);
     for i=1:size(names,1)
         setappdata(hgui,names{i},vars.(names{i}))
@@ -6065,6 +6065,8 @@ if isempty(resultslist)==0
                             result_conv_passes_list = cat(4,result_conv_passes_list{passes,:});
                             frame_spacing_corr = str2num(get(handles.frame_spacing_corr,'String'));
                             wheight_idx = 1:frame_spacing_corr:size(SNRwheights,4);
+                            size(result_conv_passes_list)
+                            size(SNRwheights(:,:,:,wheight_idx))
                             result_conv_passes_list = result_conv_passes_list.*SNRwheights(:,:,:,wheight_idx);
 
                             result_conv_sum = nansum(result_conv_passes_list,4);
@@ -7232,6 +7234,8 @@ function stabilize_Callback(hObject, eventdata, handles)
             imshow(moving_registered);
             imwrite(moving_registered, filepaths{i})
             set(handles.stabilize, 'string' , [int2str((i/steps)*100) '%'])
+            set(handles.fileselector, 'value', (i+1)/2);
+            sliderdisp;
         end
         set(handles.stabilize, 'string' , ['Stabilize!'])
         set(handles.GRP_visibility,'value',0);

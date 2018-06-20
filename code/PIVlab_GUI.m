@@ -4645,7 +4645,6 @@ elseif formattype ==2 || formattype==3 || formattype==4 || formattype==5
     
     for i=startframe:endframe
         set(handles.fileselector, 'value',i)
-        figure;
         sliderdisp
         hgca=gca;
         colo=get(gcf, 'colormap');

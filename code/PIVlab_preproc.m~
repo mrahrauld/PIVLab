@@ -1,9 +1,9 @@
 function [out,out_color] = PIVlab_preproc (in,roirect,clahe, clahesize,highp,highpsize,intenscap,wienerwurst,wienerwurstsize,lmt,lmtsize)
 if size(in,3)>1
-    out_color = in;
-    in=uint8(mean(in,3));
+    in_color = in;
+    in(:,:,2:end)=[];
 else
-    out_color = [];
+    in_color = 
 end
 %this function preprocesses the images
 if numel(roirect)>0
@@ -49,7 +49,7 @@ end
 
 if lmt == 1
     h = fspecial('average',lmtsize);
-    m = imfilter(in_roi,h,'replicate');
+    mean = imfilter(in_roi,h,'replicate');
     if mod(lmtsize,2) == 1
         nhood = ones(lmtsize,lmtsize);
     else
@@ -57,7 +57,7 @@ if lmt == 1
     end
     glob_std=std2(in_roi);
     std = stdfilt(in_roi,nhood);
-    in_roi = double(in_roi-m-glob_std);
+    in_roi = double(in_roi-mean-glob_std);
     in_roi = in_roi/max(max(in_roi))*255;
     in_roi = uint8(in_roi);
 end
@@ -65,12 +65,7 @@ end
 if wienerwurst == 1
     in_roi=wiener2(in_roi,[wienerwurstsize wienerwurstsize]);
 end
+
 out=in;
 out(y:y+height,x:x+width)=in_roi;
 out=uint8(out);
-if size(out_color,3)>1
-    out_color(y:y+height,x:x+width,:) = repmat(in_roi,1,1,3);
-    out_color= uint8(out_color);
-else 
-    out_color = out;
-end
